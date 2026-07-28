@@ -99,61 +99,83 @@ export function mapRowToMilestoneItem(row: any): MilestoneItem {
  * Fetch all milestones for a project ordered by sort_order ASC, created_at ASC
  */
 export async function fetchMilestones(projectId?: string): Promise<MilestoneItem[]> {
+  let targetData: any[] = [];
+
+  // Step 1: Full query with attachments
   try {
     let query = (supabase as any)
       .from('milestones')
-      .select(MILESTONES_SELECT_COLUMNS)
-      .order('sort_order', { ascending: true })
+      .select('id, project_id, title, progress, notes, due_date, completion_date, sort_order, created_at, milestone_attachments(id, milestone_id, file_name, file_url)')
       .order('created_at', { ascending: true });
 
     if (projectId && projectId !== 'all') {
       query = query.eq('project_id', projectId);
     }
 
-    let { data, error } = await query;
+    const { data, error } = await query;
+    if (!error && Array.isArray(data) && data.length > 0) {
+      targetData = data;
+    }
+  } catch {}
 
-    // Fallback if milestone_attachments join or title column selection fails
-    if (error) {
+  // Step 2: Base query without attachments
+  if (targetData.length === 0) {
+    try {
       let baseQuery = (supabase as any)
         .from('milestones')
-        .select(MILESTONES_BASE_COLUMNS)
-        .order('sort_order', { ascending: true })
+        .select('id, project_id, title, progress, notes, due_date, completion_date, sort_order, created_at')
         .order('created_at', { ascending: true });
 
       if (projectId && projectId !== 'all') {
         baseQuery = baseQuery.eq('project_id', projectId);
       }
 
-      const baseRes = await baseQuery;
-      if (baseRes.error) {
-        // Retry with 'name' column for legacy schemas
-        let legacyQuery = (supabase as any)
-          .from('milestones')
-          .select('id, project_id, name, progress, notes, due_date, completion_date, sort_order, created_at')
-          .order('sort_order', { ascending: true })
-          .order('created_at', { ascending: true });
-
-        if (projectId && projectId !== 'all') {
-          legacyQuery = legacyQuery.eq('project_id', projectId);
-        }
-
-        const legacyRes = await legacyQuery;
-        if (legacyRes.error) {
-          const normalized = normalizeClientError(legacyRes.error);
-          throw new Error(normalized.message);
-        }
-        data = legacyRes.data;
-      } else {
-        data = baseRes.data;
+      const { data: baseData, error: baseErr } = await baseQuery;
+      if (!baseErr && Array.isArray(baseData) && baseData.length > 0) {
+        targetData = baseData;
       }
-    }
-
-    if (!Array.isArray(data)) return [];
-    return data.map(mapRowToMilestoneItem);
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Failed to fetch milestones.';
-    throw new Error(message);
+    } catch {}
   }
+
+  // Step 3: Minimalist query with core title
+  if (targetData.length === 0) {
+    try {
+      let minQuery = (supabase as any)
+        .from('milestones')
+        .select('id, project_id, title, due_date, created_at')
+        .order('created_at', { ascending: true });
+
+      if (projectId && projectId !== 'all') {
+        minQuery = minQuery.eq('project_id', projectId);
+      }
+
+      const { data: minData, error: minErr } = await minQuery;
+      if (!minErr && Array.isArray(minData) && minData.length > 0) {
+        targetData = minData;
+      }
+    } catch {}
+  }
+
+  // Step 4: Minimalist query with legacy name
+  if (targetData.length === 0) {
+    try {
+      let nameQuery = (supabase as any)
+        .from('milestones')
+        .select('id, project_id, name, due_date, created_at')
+        .order('created_at', { ascending: true });
+
+      if (projectId && projectId !== 'all') {
+        nameQuery = nameQuery.eq('project_id', projectId);
+      }
+
+      const { data: nameData } = await nameQuery;
+      if (Array.isArray(nameData)) {
+        targetData = nameData;
+      }
+    } catch {}
+  }
+
+  return targetData.map(mapRowToMilestoneItem);
 }
 
 /**
