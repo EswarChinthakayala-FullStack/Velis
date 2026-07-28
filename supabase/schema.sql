@@ -22,8 +22,8 @@ drop table if exists public.clients cascade;
 drop table if exists public.profiles cascade;
 
 -- 1. EXTENSIONS
-create extension if not exists "uuid-ossp";
-create extension if not exists "pgcrypto";
+create extension if not exists "uuid-ossp" with schema extensions;
+create extension if not exists "pgcrypto" with schema extensions;
 
 -- 2. CUSTOM ENUMS
 do $$ begin
@@ -398,7 +398,7 @@ declare
   v_user_id uuid := gen_random_uuid();
   v_email text := 'eswarchinthakayala2004@gmail.com';
   v_password text := 'Admin@123';
-  v_encrypted_password text := crypt('Admin@123', gen_salt('bf'));
+  v_encrypted_password text := extensions.crypt('Admin@123', extensions.gen_salt('bf'));
 begin
   select id into v_user_id from auth.users where email = v_email;
 
