@@ -193,11 +193,34 @@ create table if not exists public.share_links (
   password_hash text,
   is_active boolean not null default true,
   current_views integer not null default 0,
+  views integer default 0,
+  view_count integer default 0,
   max_views integer,
+  last_accessed_at timestamptz,
+  last_access timestamptz,
   expires_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- RPC function to increment share link view analytics bypassing RLS for public visitors
+create or replace function public.increment_share_link_views(p_link_id uuid)
+returns void
+language plpgsql
+security definer
+as $$
+begin
+  update public.share_links
+  set
+    current_views = coalesce(current_views, 0) + 1,
+    views = coalesce(views, 0) + 1,
+    view_count = coalesce(view_count, 0) + 1,
+    last_accessed_at = now(),
+    last_access = now(),
+    updated_at = now()
+  where id = p_link_id;
+end;
+$$;
 
 -- 12. CHANGELOG ENTRIES TABLE (Changelog & Releases)
 create table if not exists public.changelog_entries (

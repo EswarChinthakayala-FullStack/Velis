@@ -128,15 +128,41 @@ export function useValidateShareToken(rawToken: string) {
       }
 
       // Update view analytics (non-blocking, best-effort)
-      (supabase as any)
-        .from('share_links')
-        .update({
-          current_views: currentViews + 1,
-          last_accessed_at: new Date().toISOString(),
-        })
-        .eq('id', link.id)
-        .then(() => {})
-        .catch(() => {});
+      (async () => {
+        try {
+          // 1. Primary: Security Definer RPC function (bypasses RLS for public visitors)
+          const { error: rpcErr } = await (supabase as any).rpc('increment_share_link_views', { p_link_id: link.id });
+          if (!rpcErr) return;
+        } catch {}
+
+        // 2. Direct table update fallback across all column variants
+        const nextViews = currentViews + 1;
+        const nowIso = new Date().toISOString();
+
+        try {
+          await (supabase as any)
+            .from('share_links')
+            .update({
+              current_views: nextViews,
+              views: nextViews,
+              view_count: nextViews,
+              last_accessed_at: nowIso,
+              last_access: nowIso,
+              updated_at: nowIso,
+            })
+            .eq('id', link.id);
+        } catch {
+          try {
+            await (supabase as any)
+              .from('share_links')
+              .update({
+                current_views: nextViews,
+                last_accessed_at: nowIso,
+              })
+              .eq('id', link.id);
+          } catch {}
+        }
+      })();
 
       setState('valid');
       return {
