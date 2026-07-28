@@ -18,7 +18,30 @@ if (!supabaseAnonKey || typeof supabaseAnonKey !== 'string' || supabaseAnonKey.t
 }
 
 // ============================================================================
-// 2. Singleton Initialization (Standard Official Supabase Client)
+// 2. Resilient Fetch Wrapper (Retries ERR_CONNECTION_RESET & ERR_HTTP2_PROTOCOL_ERROR)
+// ============================================================================
+
+const fetchWithRetry = async (
+  input: RequestInfo | URL,
+  init?: RequestInit,
+  retries = 3,
+  delay = 500
+): Promise<Response> => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const response = await fetch(input, init);
+      return response;
+    } catch (err: any) {
+      if (i === retries - 1) throw err;
+      // Exponential backoff delay for network socket resets / HTTP2 protocol drops
+      await new Promise((res) => setTimeout(res, delay * Math.pow(2, i)));
+    }
+  }
+  return fetch(input, init);
+};
+
+// ============================================================================
+// 3. Singleton Initialization (Standard Official Supabase Client)
 // ============================================================================
 
 export const supabase: SupabaseClient<Database> = createClient<Database>(
@@ -30,6 +53,9 @@ export const supabase: SupabaseClient<Database> = createClient<Database>(
       persistSession: true,
       detectSessionInUrl: true,
     },
+    global: {
+      fetch: fetchWithRetry,
+    },
   }
 );
 
@@ -37,8 +63,7 @@ export async function resilientFetch(
   input: RequestInfo | URL,
   init?: RequestInit
 ): Promise<Response> {
-  const targetUrl = typeof input === 'string' ? input : input instanceof URL ? input.toString() : (input as Request).url;
-  return fetch(targetUrl, init);
+  return fetchWithRetry(input, init);
 }
 
 export default supabase;
