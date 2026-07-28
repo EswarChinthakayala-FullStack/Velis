@@ -32,8 +32,8 @@ export async function fetchProjectChangelog(projectId?: string | null): Promise<
   try {
     let query = (supabase as any)
       .from('changelog_entries')
-      .select(CHANGELOG_SELECT_COLUMNS)
-      .order('released_at', { ascending: false });
+      .select('id, project_id, version, title, summary, description, release_type, created_at, updated_at')
+      .order('created_at', { ascending: false });
 
     if (projectId && projectId !== 'all') {
       query = query.eq('project_id', projectId);
@@ -43,12 +43,12 @@ export async function fetchProjectChangelog(projectId?: string | null): Promise<
     if (error) throw error;
     return (data || []).map(mapRowToEntry);
   } catch (err: any) {
-    // Fallback if enhanced columns do not exist on remote Supabase table yet
+    // Fallback query for minimalist schema
     try {
       let fallbackQuery = (supabase as any)
         .from('changelog_entries')
-        .select(CHANGELOG_CORE_COLUMNS)
-        .order('released_at', { ascending: false });
+        .select('id, project_id, version, title, description, created_at')
+        .order('created_at', { ascending: false });
 
       if (projectId && projectId !== 'all') {
         fallbackQuery = fallbackQuery.eq('project_id', projectId);
@@ -58,7 +58,6 @@ export async function fetchProjectChangelog(projectId?: string | null): Promise<
       if (fallbackError) throw fallbackError;
       return (fallbackData || []).map(mapRowToEntry);
     } catch (fallbackErr: any) {
-      console.warn('Unable to load changelog entries from Supabase:', fallbackErr?.message || fallbackErr);
       return [];
     }
   }

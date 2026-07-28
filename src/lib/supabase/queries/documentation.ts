@@ -267,53 +267,102 @@ export async function fetchProjectDocuments(
       return getLocalDocuments(projectId);
     }
 
-    // 1. Try querying project_documents table
-    let query = (supabase as any)
-      .from('project_documents')
-      .select(DOCUMENT_SELECT_COLUMNS)
-      .eq('project_id', targetProjectId)
-      .order('sort_order', { ascending: true });
+    let data: any[] = [];
 
-    if (isClientOnly) {
-      query = query.eq('is_client_visible', true);
-    }
-
-    let { data, error } = await query;
-
-    // 2. Fallback to project_sections table if project_documents is not created yet
-    if (error) {
-      let secQuery = (supabase as any)
-        .from('project_sections')
-        .select('id, project_id, name, sort_order, content')
+    // 1. Try querying 'documents' table
+    try {
+      let docQuery = (supabase as any)
+        .from('documents')
+        .select('id, project_id, title, content, category, is_public, created_at, updated_at')
         .eq('project_id', targetProjectId)
-        .order('sort_order', { ascending: true });
+        .order('created_at', { ascending: true });
 
-      const secRes = await secQuery;
-
-      if (!secRes.error && Array.isArray(secRes.data) && secRes.data.length > 0) {
-        data = secRes.data.map((s: any) => ({
-          id: s.id,
-          project_id: s.project_id,
-          title: s.name,
-          slug: s.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-          content: s.content,
-          category: 'Technical',
+      const docRes = await docQuery;
+      if (!docRes.error && Array.isArray(docRes.data) && docRes.data.length > 0) {
+        data = docRes.data.map((d: any) => ({
+          id: d.id,
+          project_id: d.project_id,
+          title: d.title,
+          slug: d.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+          content: d.content,
+          category: d.category || 'Technical',
           status: 'approved',
           version: '1.0.0',
           author: 'System Lead',
-          is_client_visible: true,
-          sort_order: s.sort_order,
-          tags: ['Overview'],
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          is_client_visible: d.is_public ?? true,
+          sort_order: 0,
+          tags: [d.category || 'Documentation'],
+          created_at: d.created_at,
+          updated_at: d.updated_at,
         }));
       }
+    } catch {}
+
+    // 2. Try querying 'project_documents' table
+    if (!Array.isArray(data) || data.length === 0) {
+      try {
+        let pDocQuery = (supabase as any)
+          .from('project_documents')
+          .select('id, project_id, title, file_url, file_size, created_at')
+          .eq('project_id', targetProjectId)
+          .order('created_at', { ascending: true });
+
+        const pDocRes = await pDocQuery;
+        if (!pDocRes.error && Array.isArray(pDocRes.data) && pDocRes.data.length > 0) {
+          data = pDocRes.data.map((d: any) => ({
+            id: d.id,
+            project_id: d.project_id,
+            title: d.title,
+            slug: d.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+            content: `# ${d.title}\n\nDocument File: [${d.title}](${d.file_url})`,
+            category: 'Specification',
+            status: 'approved',
+            version: '1.0.0',
+            author: 'System Lead',
+            is_client_visible: true,
+            sort_order: 0,
+            tags: ['Specification'],
+            created_at: d.created_at,
+            updated_at: d.created_at,
+          }));
+        }
+      } catch {}
     }
 
-    // 3. Auto-seed default documents if database is empty
+    // 3. Try querying 'project_sections' table
+    if (!Array.isArray(data) || data.length === 0) {
+      try {
+        let secQuery = (supabase as any)
+          .from('project_sections')
+          .select('id, project_id, name, sort_order, content')
+          .eq('project_id', targetProjectId)
+          .order('sort_order', { ascending: true });
+
+        const secRes = await secQuery;
+        if (!secRes.error && Array.isArray(secRes.data) && secRes.data.length > 0) {
+          data = secRes.data.map((s: any) => ({
+            id: s.id,
+            project_id: s.project_id,
+            title: s.name,
+            slug: s.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+            content: s.content,
+            category: 'Technical',
+            status: 'approved',
+            version: '1.0.0',
+            author: 'System Lead',
+            is_client_visible: true,
+            sort_order: s.sort_order,
+            tags: ['Overview'],
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }));
+        }
+      } catch {}
+    }
+
+    // 4. Auto-seed default documents if database is empty
     if (!Array.isArray(data) || data.length === 0) {
       if (isClientOnly) {
-        // Portal read-only mode: return in-memory default documents directly without DB insert
         data = DEFAULT_DOCUMENTS.map((doc, idx) => ({
           id: `default-${idx}-${targetProjectId}`,
           project_id: targetProjectId,
@@ -331,32 +380,24 @@ export async function fetchProjectDocuments(
           updated_at: new Date().toISOString(),
         }));
       } else {
-        // Admin mode: attempt DB seed safely
         try {
           const defaultRows = DEFAULT_DOCUMENTS.map((doc) => ({
             project_id: targetProjectId,
             title: doc.title,
-            slug: doc.slug,
             category: doc.category,
-            status: doc.status,
-            version: doc.version,
-            author: doc.author,
-            is_client_visible: doc.is_client_visible,
-            sort_order: doc.sort_order,
-            tags: doc.tags,
             content: doc.content,
+            is_public: doc.is_client_visible,
           }));
 
           const seedRes = await (supabase as any)
-            .from('project_documents')
+            .from('documents')
             .insert(defaultRows)
-            .select(DOCUMENT_SELECT_COLUMNS);
+            .select('id, project_id, title, content, category, is_public, created_at, updated_at');
 
           if (!seedRes.error && Array.isArray(seedRes.data)) {
             data = seedRes.data;
           }
         } catch {
-          // If DB insert fails (e.g. unauthenticated), fallback to in-memory defaults
           data = DEFAULT_DOCUMENTS.map((doc, idx) => ({
             id: `default-${idx}-${targetProjectId}`,
             project_id: targetProjectId,
