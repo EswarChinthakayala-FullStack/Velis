@@ -67,7 +67,6 @@ export async function resilientFetch(
     while (true) {
       try {
         const opts: RequestInit = init ? { ...init } : {};
-        opts.cache = 'no-store';
         return await fetch(targetUrl, opts);
       } catch (err: any) {
         attempt++;
