@@ -82,16 +82,14 @@ export async function fetchProjectUpdates(projectId?: string): Promise<TimelineE
 
     const { data, error } = await query;
 
-    if (error) {
-      const normalized = normalizeClientError(error);
-      throw new Error(normalized.message);
+    if (error || !Array.isArray(data)) {
+      return [];
     }
 
-    if (!Array.isArray(data)) return [];
     return data.map(mapRowToTimelineEntry);
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Failed to fetch project updates.';
-    throw new Error(message);
+    console.warn('[Supabase Timeline Query Warning]:', err);
+    return [];
   }
 }
 

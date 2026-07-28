@@ -275,6 +275,19 @@ create table if not exists public.files (
   updated_at timestamptz default now()
 );
 
+create table if not exists public.project_updates (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references public.projects(id) on delete cascade,
+  created_by uuid references public.profiles(id) on delete set null,
+  title text not null,
+  description text,
+  content text,
+  entry_date timestamptz default now(),
+  attachments jsonb default '[]'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz default now()
+);
+
 -- 14. TELEMETRY & ACTIVITY LOGS (Developer Telemetry)
 create table if not exists public.activity_logs (
   id uuid primary key default gen_random_uuid(),
