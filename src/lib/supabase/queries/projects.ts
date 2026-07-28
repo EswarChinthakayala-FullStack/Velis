@@ -114,9 +114,12 @@ export async function fetchProjects(
     const totalCount = count ?? rawProjects.length;
     const totalPages = Math.ceil(totalCount / pageSize) || 1;
 
-    // Secondary client lookup to keep URL query strings short
+    // Secondary lightweight lookups for client, repos, and technologies
+    const projectIds = rawProjects.map((p: any) => p.id).filter(Boolean);
     const clientIds = Array.from(new Set(rawProjects.map((p: any) => p.client_id).filter(Boolean)));
     const clientMap: Record<string, { name: string; company?: string }> = {};
+    const repoMap: Record<string, any[]> = {};
+    const techMap: Record<string, any[]> = {};
 
     if (clientIds.length > 0) {
       try {
@@ -133,11 +136,48 @@ export async function fetchProjects(
       }
     }
 
+    if (projectIds.length > 0) {
+      try {
+        const { data: repoData } = await (supabase as any)
+          .from('github_repositories')
+          .select('id, project_id, repo_url, organization, branch, visibility, open_issues, open_prs, last_synced_at')
+          .in('project_id', projectIds);
+
+        (repoData || []).forEach((r: any) => {
+          const pid = String(r.project_id);
+          if (!repoMap[pid]) repoMap[pid] = [];
+          repoMap[pid].push(r);
+        });
+      } catch {
+        // Fallback
+      }
+
+      try {
+        const { data: techData } = await (supabase as any)
+          .from('project_technologies')
+          .select('id, project_id, name, icon_url')
+          .in('project_id', projectIds);
+
+        (techData || []).forEach((t: any) => {
+          const pid = String(t.project_id);
+          if (!techMap[pid]) techMap[pid] = [];
+          techMap[pid].push(t);
+        });
+      } catch {
+        // Fallback
+      }
+    }
+
     const projects = rawProjects.map((row: any) => {
       const clientInfo = row.client_id ? clientMap[String(row.client_id)] : undefined;
+      const repos = repoMap[String(row.id)] || [];
+      const techs = techMap[String(row.id)] || [];
+
       return mapRowToProject({
         ...row,
         clients: clientInfo ? { name: clientInfo.name, company: clientInfo.company } : undefined,
+        github_repositories: repos,
+        project_technologies: techs,
       });
     });
 
@@ -175,7 +215,42 @@ export async function fetchProjectBySlugOrId(identifier: string): Promise<Projec
       throw new Error(normalized.message);
     }
 
-    return mapRowToProject(data);
+    let clientInfo: { name: string; company?: string } | undefined = undefined;
+    if (data.client_id) {
+      try {
+        const { data: cData } = await (supabase as any)
+          .from('clients')
+          .select('id, name, company')
+          .eq('id', data.client_id)
+          .maybeSingle();
+        if (cData) clientInfo = { name: String(cData.name), company: cData.company ? String(cData.company) : undefined };
+      } catch {}
+    }
+
+    let repos: any[] = [];
+    let techs: any[] = [];
+    try {
+      const { data: rData } = await (supabase as any)
+        .from('github_repositories')
+        .select('id, project_id, repo_url, organization, branch, visibility, open_issues, open_prs, last_synced_at')
+        .eq('project_id', data.id);
+      repos = rData || [];
+    } catch {}
+
+    try {
+      const { data: tData } = await (supabase as any)
+        .from('project_technologies')
+        .select('id, project_id, name, icon_url')
+        .eq('project_id', data.id);
+      techs = tData || [];
+    } catch {}
+
+    return mapRowToProject({
+      ...data,
+      clients: clientInfo ? { name: clientInfo.name, company: clientInfo.company } : undefined,
+      github_repositories: repos,
+      project_technologies: techs,
+    });
   } catch (err: any) {
     const normalized = normalizeClientError(err);
     throw new Error(normalized.message);
