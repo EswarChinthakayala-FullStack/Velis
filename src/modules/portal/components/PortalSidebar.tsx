@@ -52,8 +52,6 @@ const navGroups: NavGroup[] = [
     items: [
       { id: 'milestones', label: 'Milestones', icon: Flag01Icon, description: 'Roadmap tracking' },
       { id: 'changelog', label: 'Changelog', icon: Tag01Icon, description: 'Version history & releases', settingKey: 'showChangelog' },
-      { id: 'deployments', label: 'Environments', icon: RocketIcon, description: 'Live app URLs & status', settingKey: 'showDeployments' },
-      { id: 'screenshots', label: 'Gallery', icon: Image01Icon, description: 'Screenshots & demos' },
     ],
   },
   {
