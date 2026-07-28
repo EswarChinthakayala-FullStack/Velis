@@ -391,3 +391,91 @@ do $$ begin alter publication supabase_realtime add table public.milestones; exc
 do $$ begin alter publication supabase_realtime add table public.documents; exception when others then null; end $$;
 do $$ begin alter publication supabase_realtime add table public.github_repositories; exception when others then null; end $$;
 do $$ begin alter publication supabase_realtime add table public.changelog_entries; exception when others then null; end $$;
+
+-- 21. AUTOMATED ADMIN USER & PROFILE INITIALIZATION
+do $$
+declare
+  v_user_id uuid := gen_random_uuid();
+  v_email text := 'eswarchinthakayala2004@gmail.com';
+  v_password text := 'Admin@123';
+  v_encrypted_password text := crypt('Admin@123', gen_salt('bf'));
+begin
+  select id into v_user_id from auth.users where email = v_email;
+
+  if v_user_id is null then
+    v_user_id := gen_random_uuid();
+    insert into auth.users (
+      instance_id,
+      id,
+      aud,
+      role,
+      email,
+      encrypted_password,
+      email_confirmed_at,
+      last_sign_in_at,
+      raw_app_meta_data,
+      raw_user_meta_data,
+      is_super_admin,
+      created_at,
+      updated_at,
+      email_change_token_current,
+      email_change,
+      email_change_token_new,
+      recovery_token
+    ) values (
+      '00000000-0000-0000-0000-000000000000',
+      v_user_id,
+      'authenticated',
+      'authenticated',
+      v_email,
+      v_encrypted_password,
+      now(),
+      now(),
+      '{"provider":"email","providers":["email"]}'::jsonb,
+      '{"full_name":"Eswar Chinthakayala"}'::jsonb,
+      false,
+      now(),
+      now(),
+      '',
+      '',
+      '',
+      ''
+    );
+
+    insert into auth.identities (
+      id,
+      user_id,
+      identity_data,
+      provider,
+      last_sign_in_at,
+      created_at,
+      updated_at,
+      provider_id
+    ) values (
+      v_user_id,
+      v_user_id,
+      format('{"sub":"%s","email":"%s"}', v_user_id, v_email)::jsonb,
+      'email',
+      now(),
+      now(),
+      now(),
+      v_email
+    );
+  end if;
+
+  insert into public.profiles (id, full_name, email, role, company, github_username)
+  values (
+    v_user_id,
+    'Eswar Chinthakayala',
+    v_email,
+    'admin',
+    'EsFlow Systems',
+    'EswarChinthakayala-FullStack'
+  )
+  on conflict (id) do update set
+    full_name = excluded.full_name,
+    email = excluded.email,
+    role = excluded.role,
+    company = excluded.company,
+    github_username = excluded.github_username;
+end $$;
