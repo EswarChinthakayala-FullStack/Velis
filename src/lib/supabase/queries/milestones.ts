@@ -21,10 +21,10 @@ export const MILESTONE_QUERY_KEYS = {
 };
 
 const MILESTONES_SELECT_COLUMNS =
-  'id, project_id, name, progress, notes, due_date, completion_date, sort_order, created_at, milestone_attachments(id, milestone_id, file_name, file_url)';
+  'id, project_id, title, progress, notes, due_date, completion_date, sort_order, created_at, milestone_attachments(id, milestone_id, file_name, file_url)';
 
 const MILESTONES_BASE_COLUMNS =
-  'id, project_id, name, progress, notes, due_date, completion_date, sort_order, created_at';
+  'id, project_id, title, progress, notes, due_date, completion_date, sort_order, created_at';
 
 const LOCAL_ATTACHMENTS_KEY = 'velis_milestone_attachments';
 
@@ -84,7 +84,7 @@ export function mapRowToMilestoneItem(row: any): MilestoneItem {
   return {
     id: milestoneIdStr,
     projectId: String(row.project_id),
-    name: String(row.name),
+    name: String(row.title || row.name || 'Milestone'),
     progress: Number(row.progress ?? 0),
     notes: row.notes ? String(row.notes) : undefined,
     dueDate: row.due_date ? String(row.due_date) : undefined,
@@ -112,7 +112,7 @@ export async function fetchMilestones(projectId?: string): Promise<MilestoneItem
 
     let { data, error } = await query;
 
-    // Fallback if milestone_attachments join fails with RLS 403 Forbidden
+    // Fallback if milestone_attachments join or title column selection fails
     if (error) {
       let baseQuery = (supabase as any)
         .from('milestones')
@@ -126,10 +126,26 @@ export async function fetchMilestones(projectId?: string): Promise<MilestoneItem
 
       const baseRes = await baseQuery;
       if (baseRes.error) {
-        const normalized = normalizeClientError(baseRes.error);
-        throw new Error(normalized.message);
+        // Retry with 'name' column for legacy schemas
+        let legacyQuery = (supabase as any)
+          .from('milestones')
+          .select('id, project_id, name, progress, notes, due_date, completion_date, sort_order, created_at')
+          .order('sort_order', { ascending: true })
+          .order('created_at', { ascending: true });
+
+        if (projectId && projectId !== 'all') {
+          legacyQuery = legacyQuery.eq('project_id', projectId);
+        }
+
+        const legacyRes = await legacyQuery;
+        if (legacyRes.error) {
+          const normalized = normalizeClientError(legacyRes.error);
+          throw new Error(normalized.message);
+        }
+        data = legacyRes.data;
+      } else {
+        data = baseRes.data;
       }
-      data = baseRes.data;
     }
 
     if (!Array.isArray(data)) return [];
@@ -161,10 +177,20 @@ export async function fetchMilestoneById(id: string): Promise<MilestoneItem | nu
         .single();
 
       if (baseRes.error) {
-        const normalized = normalizeClientError(baseRes.error);
-        throw new Error(normalized.message);
+        const legacyRes = await (supabase as any)
+          .from('milestones')
+          .select('id, project_id, name, progress, notes, due_date, completion_date, sort_order, created_at')
+          .eq('id', id)
+          .single();
+
+        if (legacyRes.error) {
+          const normalized = normalizeClientError(legacyRes.error);
+          throw new Error(normalized.message);
+        }
+        data = legacyRes.data;
+      } else {
+        data = baseRes.data;
       }
-      data = baseRes.data;
     }
 
     if (!data) return null;
@@ -183,23 +209,40 @@ export async function createMilestone(payload: CreateMilestonePayload): Promise<
   if (!payload.name.trim()) throw new Error('Milestone name is required.');
 
   try {
-    const { data, error } = await (supabase as any)
+    // Try primary schema column: title
+    let { data, error } = await (supabase as any)
       .from('milestones')
       .insert({
         project_id: payload.projectId,
-        name: payload.name.trim(),
         title: payload.name.trim(),
         progress: payload.progress ?? 0,
         notes: payload.notes || null,
         due_date: payload.dueDate || null,
         sort_order: payload.sortOrder ?? 0,
       })
-      .select(MILESTONES_BASE_COLUMNS)
+      .select('id, project_id, title, progress, notes, due_date, completion_date, sort_order, created_at')
       .single();
 
     if (error) {
-      const normalized = normalizeClientError(error);
-      throw new Error(normalized.message);
+      // Fallback for legacy schema with 'name' column
+      const fallbackRes = await (supabase as any)
+        .from('milestones')
+        .insert({
+          project_id: payload.projectId,
+          name: payload.name.trim(),
+          progress: payload.progress ?? 0,
+          notes: payload.notes || null,
+          due_date: payload.dueDate || null,
+          sort_order: payload.sortOrder ?? 0,
+        })
+        .select('id, project_id, name, progress, notes, due_date, completion_date, sort_order, created_at')
+        .single();
+
+      if (fallbackRes.error) {
+        const normalized = normalizeClientError(fallbackRes.error);
+        throw new Error(normalized.message);
+      }
+      data = fallbackRes.data;
     }
 
     return mapRowToMilestoneItem(data);
@@ -222,7 +265,6 @@ export async function updateMilestone(
     const updateData: Record<string, any> = {};
 
     if (payload.name !== undefined) {
-      updateData.name = payload.name.trim();
       updateData.title = payload.name.trim();
     }
     if (payload.progress !== undefined) updateData.progress = payload.progress;
@@ -231,16 +273,27 @@ export async function updateMilestone(
     if (payload.completionDate !== undefined) updateData.completion_date = payload.completionDate || null;
     if (payload.sortOrder !== undefined) updateData.sort_order = payload.sortOrder;
 
-    const { data, error } = await (supabase as any)
+    let { data, error } = await (supabase as any)
       .from('milestones')
       .update(updateData)
       .eq('id', id)
-      .select(MILESTONES_BASE_COLUMNS)
+      .select('id, project_id, title, progress, notes, due_date, completion_date, sort_order, created_at')
       .single();
 
     if (error) {
-      const normalized = normalizeClientError(error);
-      throw new Error(normalized.message);
+      if (payload.name !== undefined) updateData.name = payload.name.trim();
+      const fallbackRes = await (supabase as any)
+        .from('milestones')
+        .update(updateData)
+        .eq('id', id)
+        .select('id, project_id, name, progress, notes, due_date, completion_date, sort_order, created_at')
+        .single();
+
+      if (fallbackRes.error) {
+        const normalized = normalizeClientError(fallbackRes.error);
+        throw new Error(normalized.message);
+      }
+      data = fallbackRes.data;
     }
 
     return mapRowToMilestoneItem(data);
