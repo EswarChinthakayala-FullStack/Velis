@@ -93,7 +93,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
           password: data.password,
           options: {
             data: {
-              full_name: 'Eswar Chinthakayala',
+              full_name: data.email.split('@')[0],
             },
           },
         });
