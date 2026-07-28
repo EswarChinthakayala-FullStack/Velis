@@ -13,22 +13,10 @@ import type {
 /**
  * Fetch payments for a given project.
  */
-export async function fetchProjectPayments(projectId?: string | null): Promise<PaymentEntry[]> {
-  let query = (supabase as any)
-    .from('project_payments')
-    .select('id, project_id, amount, currency, payment_method, transaction_id, payment_date, is_verified, notes, invoice_url, receipt_url, created_at, updated_at')
-    .order('payment_date', { ascending: false });
-
-  if (projectId && projectId !== 'all') {
-    query = query.eq('project_id', projectId);
-  }
-
-  const { data, error } = await query;
-  if (error || !data) return [];
-
-  return data.map((row: any) => ({
-    id: row.id,
-    projectId: row.project_id,
+function mapRowToPayment(row: any): PaymentEntry {
+  return {
+    id: String(row.id),
+    projectId: String(row.project_id),
     amount: Number(row.amount || 0),
     currency: row.currency || 'USD',
     paymentMethod: row.payment_method || 'Bank Transfer',
@@ -40,7 +28,42 @@ export async function fetchProjectPayments(projectId?: string | null): Promise<P
     receiptUrl: row.receipt_url || null,
     createdAt: row.created_at || new Date().toISOString(),
     updatedAt: row.updated_at || new Date().toISOString(),
-  }));
+  };
+}
+
+export async function fetchProjectPayments(projectId?: string | null): Promise<PaymentEntry[]> {
+  try {
+    let query = (supabase as any)
+      .from('project_payments')
+      .select('id, project_id, amount, currency, payment_method, transaction_id, payment_date, is_verified, notes, invoice_url, receipt_url, created_at, updated_at')
+      .order('created_at', { ascending: false });
+
+    if (projectId && projectId !== 'all') {
+      query = query.eq('project_id', projectId);
+    }
+
+    const { data, error } = await query;
+    if (!error && data) {
+      return data.map(mapRowToPayment);
+    }
+  } catch {}
+
+  // Fallback for minimalist schema
+  try {
+    let fallbackQuery = (supabase as any)
+      .from('project_payments')
+      .select('id, project_id, amount, currency, payment_method, transaction_id, is_verified, receipt_url, created_at')
+      .order('created_at', { ascending: false });
+
+    if (projectId && projectId !== 'all') {
+      fallbackQuery = fallbackQuery.eq('project_id', projectId);
+    }
+
+    const { data: fallbackData } = await fallbackQuery;
+    return (fallbackData || []).map(mapRowToPayment);
+  } catch {
+    return [];
+  }
 }
 
 /**
@@ -95,30 +118,47 @@ export async function fetchDeliveryAssets(
   projectId?: string | null,
   isReadOnly = false
 ): Promise<DeliveryAsset[]> {
-  let query = (supabase as any)
-    .from('delivery_assets')
-    .select('id, project_id, title, description, asset_type, asset_url, storage_path, unlock_type, is_manual_unlocked, is_archived, sort_order, created_at, updated_at')
-    .eq('is_archived', false)
-    .order('sort_order', { ascending: true })
-    .order('created_at', { ascending: false });
-
-  if (projectId && projectId !== 'all') {
-    query = query.eq('project_id', projectId);
-  }
-
-  const { data, error } = await query;
-  if (error || !data) return [];
-
-  // Compute summary stats for unlock evaluation if client-side check is needed as secondary verification
   const summary = await fetchPaymentSummary(projectId);
 
-  return data.map((row: any) => {
+  let rawData: any[] = [];
+  try {
+    let query = (supabase as any)
+      .from('delivery_assets')
+      .select('id, project_id, title, description, asset_type, asset_url, file_url, storage_path, unlock_type, is_manual_unlocked, is_archived, sort_order, created_at, updated_at')
+      .order('created_at', { ascending: false });
+
+    if (projectId && projectId !== 'all') {
+      query = query.eq('project_id', projectId);
+    }
+
+    const { data, error } = await query;
+    if (!error && data) {
+      rawData = data;
+    }
+  } catch {}
+
+  if (rawData.length === 0) {
+    try {
+      let fallbackQuery = (supabase as any)
+        .from('delivery_assets')
+        .select('id, project_id, title, file_url, unlock_type, is_manual_unlocked, created_at')
+        .order('created_at', { ascending: false });
+
+      if (projectId && projectId !== 'all') {
+        fallbackQuery = fallbackQuery.eq('project_id', projectId);
+      }
+
+      const { data: fallbackData } = await fallbackQuery;
+      rawData = fallbackData || [];
+    } catch {}
+  }
+
+  return rawData.map((row: any) => {
     const unlockType = row.unlock_type || '100_percent';
     const isManualUnlocked = Boolean(row.is_manual_unlocked);
 
     let isUnlocked = false;
     if (!isReadOnly) {
-      // Admin always sees unlock status
       isUnlocked = true;
     } else {
       if (unlockType === 'immediate') {
@@ -137,12 +177,12 @@ export async function fetchDeliveryAssets(
     }
 
     return {
-      id: row.id,
-      projectId: row.project_id,
+      id: String(row.id),
+      projectId: String(row.project_id),
       title: row.title || 'Deliverable',
       description: row.description || null,
-      assetType: row.asset_type || 'google_drive',
-      assetUrl: row.asset_url || '',
+      assetType: row.asset_type || 'file',
+      assetUrl: row.asset_url || row.file_url || '',
       storagePath: row.storage_path || null,
       unlockType,
       isManualUnlocked,
