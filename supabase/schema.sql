@@ -290,10 +290,10 @@ language plpgsql
 security definer
 as $$
 declare
-  v_active_projects count_result;
-  v_completed_projects count_result;
-  v_total_clients count_result;
-  v_pending_tasks count_result;
+  v_active_projects bigint;
+  v_completed_projects bigint;
+  v_total_clients bigint;
+  v_pending_tasks bigint;
   v_total_revenue numeric;
   v_result json;
 begin
