@@ -185,24 +185,6 @@ export function AppSidebar({
       isActive: currentView === "changelog",
     },
     {
-      title: "Private Admin Notes",
-      view: "notes" as ViewMode,
-      icon: <HugeiconsIcon icon={ShieldKeyIcon} size={16} />,
-      isActive: currentView === "notes",
-    },
-    {
-      title: "Deployments & Envs",
-      view: "deployments" as ViewMode,
-      icon: <HugeiconsIcon icon={RocketIcon} size={16} />,
-      isActive: currentView === "deployments",
-    },
-    {
-      title: "Notification Center",
-      view: "notifications" as ViewMode,
-      icon: <HugeiconsIcon icon={Notification01Icon} size={16} />,
-      isActive: currentView === "notifications",
-    },
-    {
       title: "Settings & API",
       view: "settings" as ViewMode,
       icon: <HugeiconsIcon icon={Settings01Icon} size={16} />,
