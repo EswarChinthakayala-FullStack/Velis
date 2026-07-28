@@ -85,20 +85,15 @@ export function useCreateChangelogEntry() {
             title: input.title,
             summary: input.summary || null,
             description: input.description || null,
-            released_at: input.releasedAt || new Date().toISOString(),
             release_type: input.releaseType || 'stable',
-            status: input.status || 'published',
-            attachments: input.attachments || [],
-            github_release_url: input.githubReleaseUrl || null,
-            environment: input.environment || 'production',
           })
-          .select(CHANGELOG_SELECT_COLUMNS)
+          .select('id, project_id, version, title, summary, description, release_type, created_at')
           .single();
 
         if (error) throw error;
         return data;
       } catch (err: any) {
-        // Fallback insert with core 0016_changelog columns
+        // Fallback insert with core columns
         const { data: fallbackData, error: fallbackError } = await (supabase as any)
           .from('changelog_entries')
           .insert({
@@ -106,9 +101,8 @@ export function useCreateChangelogEntry() {
             version: input.version,
             title: input.title,
             description: input.description || null,
-            released_at: input.releasedAt || new Date().toISOString(),
           })
-          .select(CHANGELOG_CORE_COLUMNS)
+          .select('id, project_id, version, title, description, created_at')
           .single();
 
         if (fallbackError) throw fallbackError;
@@ -132,13 +126,7 @@ export function useUpdateChangelogEntry() {
           title: input.title,
           summary: input.summary,
           description: input.description,
-          released_at: input.releasedAt,
           release_type: input.releaseType,
-          status: input.status,
-          attachments: input.attachments,
-          github_release_url: input.githubReleaseUrl,
-          environment: input.environment,
-          updated_at: new Date().toISOString(),
         };
         Object.keys(payload).forEach((key) => payload[key] === undefined && delete payload[key]);
 
@@ -146,18 +134,16 @@ export function useUpdateChangelogEntry() {
           .from('changelog_entries')
           .update(payload)
           .eq('id', input.id)
-          .select(CHANGELOG_SELECT_COLUMNS)
+          .select('id, project_id, version, title, summary, description, release_type, created_at')
           .single();
 
         if (error) throw error;
         return data;
       } catch (err: any) {
-        // Fallback update with core 0016_changelog columns
         const fallbackPayload: any = {
           version: input.version,
           title: input.title,
           description: input.description,
-          released_at: input.releasedAt,
         };
         Object.keys(fallbackPayload).forEach((key) => fallbackPayload[key] === undefined && delete fallbackPayload[key]);
 
@@ -165,7 +151,7 @@ export function useUpdateChangelogEntry() {
           .from('changelog_entries')
           .update(fallbackPayload)
           .eq('id', input.id)
-          .select(CHANGELOG_CORE_COLUMNS)
+          .select('id, project_id, version, title, description, created_at')
           .single();
 
         if (fallbackError) throw fallbackError;

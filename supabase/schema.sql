@@ -232,6 +232,7 @@ create table if not exists public.changelog_entries (
   summary text,
   description text,
   release_type text default 'stable',
+  released_at timestamptz default now(),
   created_at timestamptz not null default now()
 );
 
