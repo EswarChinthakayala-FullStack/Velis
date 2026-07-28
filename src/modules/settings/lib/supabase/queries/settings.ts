@@ -15,7 +15,7 @@ import type {
 } from '../../../types/settings';
 
 const BASIC_PROFILE_COLUMNS = 'id, full_name, email, avatar_url, role, created_at';
-const FULL_PROFILE_COLUMNS = 'id, full_name, email, avatar_url, role, username, bio, company, website, github_username, country, timezone, preferred_language, created_at';
+const FULL_PROFILE_COLUMNS = 'id, full_name, email, avatar_url, role, username, company, github_username, created_at';
 
 // 1. Fetch Setting Row by Key from Supabase DB
 export async function fetchSettingKey<T>(key: string, defaultValue: T): Promise<T> {
