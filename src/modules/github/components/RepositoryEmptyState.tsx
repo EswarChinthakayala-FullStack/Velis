@@ -18,7 +18,7 @@ export const RepositoryEmptyState: React.FC<RepositoryEmptyStateProps> = ({ onCo
           No GitHub repository connected
         </h3>
         <p className="text-xs text-zinc-400 font-mono leading-relaxed">
-          Connect a repository to automatically track releases, open issues, pull requests, and commit activity directly inside Velis.
+          Connect a repository to automatically track releases, open issues, pull requests, and commit activity directly inside EsFlow.
         </p>
       </div>
 

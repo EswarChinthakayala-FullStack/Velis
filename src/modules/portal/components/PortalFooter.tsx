@@ -7,7 +7,7 @@ export const PortalFooter: React.FC = () => {
       <div className="flex items-center justify-between text-[11px] text-zinc-600">
         <div className="flex items-center gap-2">
           <AppLogo size={16} showText={false} />
-          <span className="font-medium text-zinc-500">Velis</span>
+          <span className="font-medium text-zinc-500">EsFlow</span>
         </div>
         <span>Secure Client Portal</span>
       </div>

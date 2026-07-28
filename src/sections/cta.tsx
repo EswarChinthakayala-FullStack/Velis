@@ -36,7 +36,7 @@ export const CtaSection: React.FC = () => {
           {/* Section Badge */}
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-zinc-900/90 border border-zinc-800 backdrop-blur-xl text-xs text-zinc-300 shadow-xl">
             <HugeiconsIcon icon={SparklesIcon} size={14} className="text-zinc-300 animate-pulse" />
-            <span className="font-medium">Velis Workspace</span>
+            <span className="font-medium">EsFlow Workspace</span>
           </div>
 
           {/* Headline */}
@@ -49,7 +49,7 @@ export const CtaSection: React.FC = () => {
 
           {/* Supporting Description */}
           <p className="text-base sm:text-lg text-zinc-400 max-w-2xl mx-auto leading-relaxed font-normal">
-            Velis helps freelancers deliver a professional client experience through secure portals, timelines, GitHub integration, living documentation, and complete project transparency.
+            EsFlow helps freelancers deliver a professional client experience through secure portals, timelines, GitHub integration, living documentation, and complete project transparency.
           </p>
 
           {/* Action Buttons Row */}

@@ -39,7 +39,7 @@ const DEFAULT_DOCUMENTS = [
     tags: ['Overview', 'Architecture', 'Getting Started'],
     content: `# Project Architecture & Executive Summary
 
-Welcome to the **Velis Enterprise Documentation Suite**.
+Welcome to the **EsFlow Enterprise Documentation Suite**.
 
 > [!NOTE]
 > This documentation space is real-time synchronized with Supabase and verified against active database security access controls.

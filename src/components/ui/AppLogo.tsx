@@ -20,9 +20,9 @@ export const AppLogo: React.FC<AppLogoProps> = ({
   className = '',
   animated = false,
   showText = false,
-  titleText = 'Velis Studio Pro',
+  titleText = 'EsFlow Studio Pro',
   subtitleText = '',
-  ariaLabel = 'Velis Application Logo'
+  ariaLabel = 'EsFlow Application Logo'
 }) => {
   const svg = (
     <svg

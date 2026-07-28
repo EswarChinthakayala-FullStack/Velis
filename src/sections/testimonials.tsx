@@ -28,7 +28,7 @@ const SAMPLE_TESTIMONIALS: TestimonialItem[] = [
     role: 'Full-Stack Developer',
     location: 'United States',
     avatarInitials: 'AW',
-    quote: 'Velis completely transformed how I deliver client projects. My clients love checking their portal instead of emailing me every morning.',
+    quote: 'EsFlow completely transformed how I deliver client projects. My clients love checking their portal instead of emailing me every morning.',
     rating: 5
   },
   {
@@ -113,7 +113,7 @@ export const TestimonialsSection: React.FC = () => {
           </h2>
 
           <p className="text-base sm:text-lg text-zinc-400 leading-relaxed">
-            See how modern independent developers and agencies elevate their work with Velis.
+            See how modern independent developers and agencies elevate their work with EsFlow.
           </p>
         </div>
 
@@ -161,7 +161,7 @@ export const TestimonialsSection: React.FC = () => {
           <div className="relative space-y-4">
             <HugeiconsIcon icon={QuoteUpIcon} size={36} className="text-zinc-700" />
             <blockquote className="text-lg sm:text-2xl font-medium text-white leading-relaxed tracking-tight">
-              &ldquo;Velis completely changed my client onboarding process. Giving every client their own secure, real-time portal eliminated 90% of status check-in emails while making my agency look like a Fortune 500 team.&rdquo;
+              &ldquo;EsFlow completely changed my client onboarding process. Giving every client their own secure, real-time portal eliminated 90% of status check-in emails while making my agency look like a Fortune 500 team.&rdquo;
             </blockquote>
           </div>
 

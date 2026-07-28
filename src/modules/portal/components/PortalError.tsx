@@ -85,7 +85,7 @@ export const PortalError: React.FC<PortalErrorProps> = ({ state, message }) => {
         {/* Security Footer Badge */}
         <div className="pt-3 border-t border-zinc-800/80 w-full flex items-center justify-center gap-1.5 text-[11px] text-zinc-500 font-mono">
           <HugeiconsIcon icon={SecurityCheckIcon} size={14} className="text-zinc-500 shrink-0" />
-          <span>Velis Read-Only Client Security</span>
+          <span>EsFlow Read-Only Client Security</span>
         </div>
       </motion.div>
     </div>

@@ -101,7 +101,7 @@ export const GitHubSettingsSection: React.FC = () => {
             label="GitHub Organization / Account"
             value={github.orgName || ''}
             onChange={(e) => handleUpdate({ orgName: e.target.value })}
-            placeholder="e.g. velis-studio"
+            placeholder="e.g. esflow-studio"
           />
           <SettingsInput
             label="Default Branch"

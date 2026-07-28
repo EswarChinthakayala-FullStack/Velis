@@ -41,7 +41,7 @@ export const NotificationSettingsSection: React.FC = () => {
         <div className="space-y-2">
           <SettingsSwitch
             label="In-App Notification Center"
-            description="Displays alert badges and notification center history within Velis."
+            description="Displays alert badges and notification center history within EsFlow."
             checked={notifications.channels.inApp}
             onChange={(checked) => handleChannelToggle('inApp', checked)}
           />

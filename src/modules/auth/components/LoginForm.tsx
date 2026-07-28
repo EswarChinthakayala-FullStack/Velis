@@ -147,7 +147,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
             type="email"
             disabled={isLoading}
             autoComplete="email"
-            placeholder="admin@velis.studio"
+            placeholder="admin@esflow.studio"
             className={`w-full pl-10 pr-4 py-3 bg-zinc-900/90 border ${
               errors.email ? 'border-rose-500/80 focus:ring-rose-500/30 focus:border-rose-500' : 'border-zinc-700/60 focus:ring-zinc-400/30 focus:border-zinc-400'
             } rounded-lg text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed`}

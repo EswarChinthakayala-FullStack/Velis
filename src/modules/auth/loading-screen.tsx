@@ -45,7 +45,7 @@ export const AuthLoadingScreen: React.FC<AuthLoadingScreenProps> = ({
         {/* Workspace Title & Brand */}
         <div className="space-y-1">
           <h2 className="text-lg font-bold text-white tracking-tight font-sans">
-            Velis Workspace
+            EsFlow Workspace
           </h2>
           <p className="text-xs text-zinc-400 font-mono">
             Enterprise Route Security

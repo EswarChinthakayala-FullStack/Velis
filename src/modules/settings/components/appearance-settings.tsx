@@ -20,7 +20,7 @@ export const AppearanceSettingsSection: React.FC = () => {
 
   return (
     <div className="space-y-4 font-mono select-none">
-      <SettingsCard title="Velis Design System & Theme Engine" description="Customize interface density, glassmorphism intensity, and motion preferences.">
+      <SettingsCard title="EsFlow Design System & Theme Engine" description="Customize interface density, glassmorphism intensity, and motion preferences.">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-3 border-b border-zinc-800/40">
           <SettingsSelect
             label="Monochrome Palette Accent"

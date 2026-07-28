@@ -190,7 +190,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
       {/* Footer Bar with Word Count */}
       <div className="px-4 py-2 bg-zinc-900/90 border-t border-zinc-800/80 flex items-center justify-between text-xs text-zinc-500 font-mono">
         <MarkdownWordCounter content={content} />
-        <span className="text-[10px] text-zinc-600">Velis Markdown Engine • Autosave Enabled</span>
+        <span className="text-[10px] text-zinc-600">EsFlow Markdown Engine • Autosave Enabled</span>
       </div>
     </motion.div>
   );

@@ -5,7 +5,7 @@ import type { ShareLinkItem, ShareLinkStatus, ShareLinkStats, ExpirationOption }
  * Formats full share portal URL for client access using token.
  */
 export function formatShareUrl(token: string): string {
-  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://velis.app';
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://esflow.app';
   return `${origin}/share/${token}`;
 }
 

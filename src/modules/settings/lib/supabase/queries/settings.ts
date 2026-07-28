@@ -86,7 +86,7 @@ export async function fetchProfileSettings(): Promise<ProfileSettings> {
     const { data: authData } = await supabase.auth.getUser();
     const user = authData?.user;
 
-    const fallbackEmail = user?.email || 'admin@velis.app';
+    const fallbackEmail = user?.email || 'admin@esflow.app';
     const fallbackName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Administrator';
     const fallbackAvatar = user?.user_metadata?.avatar_url;
 
@@ -141,7 +141,7 @@ export async function fetchProfileSettings(): Promise<ProfileSettings> {
     return {
       id: 'admin',
       fullName: 'Administrator',
-      email: 'admin@velis.app',
+      email: 'admin@esflow.app',
       role: 'admin',
       createdAt: new Date().toISOString(),
     };

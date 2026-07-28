@@ -159,13 +159,13 @@ export const ProfileSettingsSection: React.FC = () => {
             label="Company / Agency Name"
             value={formData.company}
             onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-            placeholder="e.g. Velis Systems & Media"
+            placeholder="e.g. EsFlow Systems & Media"
           />
           <SettingsInput
             label="Website URL"
             value={formData.website}
             onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-            placeholder="https://velis.studio"
+            placeholder="https://esflow.studio"
           />
           <SettingsInput
             label="GitHub Handle"

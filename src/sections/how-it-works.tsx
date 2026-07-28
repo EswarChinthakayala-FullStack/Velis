@@ -84,7 +84,7 @@ export const HowItWorksSection: React.FC = () => {
           </h2>
 
           <p className="text-base sm:text-lg text-zinc-400 leading-relaxed">
-            Velis removes the friction from keeping clients informed by providing a secure, professional project portal that syncs automatically.
+            EsFlow removes the friction from keeping clients informed by providing a secure, professional project portal that syncs automatically.
           </p>
         </div>
 

@@ -39,7 +39,7 @@ export const FeaturesSection: React.FC = () => {
           </h2>
 
           <p className="text-base sm:text-lg text-zinc-400 leading-relaxed">
-            Velis combines project tracking, live GitHub sync, living documentation, and client collaboration into one premium operating system.
+            EsFlow combines project tracking, live GitHub sync, living documentation, and client collaboration into one premium operating system.
           </p>
         </div>
 

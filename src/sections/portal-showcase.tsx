@@ -156,7 +156,7 @@ export const PortalShowcaseSection: React.FC = () => {
 
                 <div className="flex items-center gap-2 px-3 py-1 bg-zinc-900 border border-zinc-800 rounded-lg text-[11px] font-mono text-zinc-300">
                   <HugeiconsIcon icon={LockKeyIcon} size={12} className="text-zinc-400" />
-                  <span>portal.velis.app/share/3f8e9a2b</span>
+                  <span>portal.esflow.app/share/3f8e9a2b</span>
                 </div>
 
                 <span className="text-[10px] font-mono text-zinc-300 bg-zinc-900 border border-zinc-800 px-2.5 py-0.5 rounded-lg flex items-center gap-1">

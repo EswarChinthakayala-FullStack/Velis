@@ -69,7 +69,7 @@ export const PaymentUnlockPopup: React.FC<PaymentUnlockPopupProps> = ({
   }).format(remainingAmount);
 
   // Generate standard UPI URL and QR Code API image URL for active UPI ID
-  const upiUrl = `upi://pay?pa=${encodeURIComponent(currentMethod.upiId)}&pn=Velis%20Projects&am=${remainingAmount}&cu=INR`;
+  const upiUrl = `upi://pay?pa=${encodeURIComponent(currentMethod.upiId)}&pn=EsFlow%20Projects&am=${remainingAmount}&cu=INR`;
   const qrCodeImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(upiUrl)}`;
 
   const handleCopyUpi = () => {

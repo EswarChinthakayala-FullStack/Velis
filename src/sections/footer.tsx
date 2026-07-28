@@ -126,7 +126,7 @@ export const FooterSection: React.FC = () => {
         {/* Bottom Bar: Copyright & Operational Status */}
         <div className="pt-8 border-t border-zinc-800/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono">
           <div>
-            &copy; {currentYear} Velis. All rights reserved.
+            &copy; {currentYear} EsFlow. All rights reserved.
           </div>
 
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-zinc-900 border border-zinc-800 rounded-full text-zinc-300">
