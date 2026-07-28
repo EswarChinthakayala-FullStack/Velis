@@ -17,9 +17,9 @@ import { normalizeClientError } from '../../utils/client-errors';
  * Pure data layer: ZERO mock data, ZERO SELECT * queries, ZERO raw errors exposed.
  */
 
-// Explicit column selections (NO SELECT *)
-const CLIENT_COLUMNS = 'id, name, company, email, phone, country, timezone, website, notes, github_username, social_links, created_at, updated_at, projects(id, status)';
-const CLIENT_SINGLE_COLUMNS = 'id, name, company, email, phone, country, timezone, website, notes, github_username, social_links, created_at, updated_at';
+// Explicit column selections (NO SELECT *, NO nested JOIN strings)
+const CLIENT_COLUMNS = 'id, name, company, email, phone, country, timezone, website, notes, github_username, created_at, updated_at';
+const CLIENT_SINGLE_COLUMNS = 'id, name, company, email, phone, country, timezone, website, notes, github_username, created_at, updated_at';
 const PROJECT_COLUMNS = 'id, name, slug, description, status, priority, completion_percent, color, start_date, deadline, updated_at';
 
 // --- Direct Database Access Functions ---
@@ -63,7 +63,29 @@ export async function fetchClients(
     const totalCount = count ?? rawClients.length;
     const totalPages = Math.ceil(totalCount / pageSize) || 1;
 
-    const clients: ClientRecord[] = rawClients.map(mapSupabaseRowToClient);
+    // Secondary lightweight lookup for client projects
+    const clientIds = rawClients.map((c: any) => c.id).filter(Boolean);
+    const projectsMap: Record<string, any[]> = {};
+
+    if (clientIds.length > 0) {
+      try {
+        const { data: projectsData } = await (supabase as any)
+          .from('projects')
+          .select('id, client_id, status')
+          .in('client_id', clientIds);
+
+        (projectsData || []).forEach((p: any) => {
+          const cid = String(p.client_id);
+          if (!projectsMap[cid]) projectsMap[cid] = [];
+          projectsMap[cid].push(p);
+        });
+      } catch {}
+    }
+
+    const clients: ClientRecord[] = rawClients.map((c: any) =>
+      mapSupabaseRowToClient({ ...c, projects: projectsMap[String(c.id)] || [] })
+    );
+
     const filteredClients =
       status === 'all' ? clients : clients.filter((c) => c.status === status);
 
@@ -84,7 +106,7 @@ export async function fetchClientById(clientId: string): Promise<ClientRecord> {
   try {
     const { data, error } = await (supabase as any)
       .from('clients')
-      .select(CLIENT_COLUMNS)
+      .select(CLIENT_SINGLE_COLUMNS)
       .eq('id', clientId)
       .single();
 
@@ -93,7 +115,16 @@ export async function fetchClientById(clientId: string): Promise<ClientRecord> {
       throw new Error(normalized.message);
     }
 
-    return mapSupabaseRowToClient(data);
+    let projects: any[] = [];
+    try {
+      const { data: pData } = await (supabase as any)
+        .from('projects')
+        .select('id, client_id, status')
+        .eq('client_id', clientId);
+      projects = pData || [];
+    } catch {}
+
+    return mapSupabaseRowToClient({ ...data, projects });
   } catch (err: any) {
     const normalized = normalizeClientError(err);
     throw new Error(normalized.message);
