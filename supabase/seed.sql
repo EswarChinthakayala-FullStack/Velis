@@ -1,5 +1,5 @@
 -- ============================================================================
--- ESFLOW AUTOMATED ADMIN INITIALIZATION SCRIPT (FIXES GOTRUE 500 ERROR)
+-- ESFLOW AUTOMATED ADMIN INITIALIZATION SCRIPT
 -- Sole System Owner: Eswar Chinthakayala
 -- Email: eswarchinthakayala2004@gmail.com
 -- Default Password: Admin@123
@@ -15,7 +15,7 @@ declare
   v_password text := 'Admin@123';
   v_encrypted_password text := crypt('Admin@123', gen_salt('bf'));
 begin
-  -- 1. Insert valid GoTrue user into auth.users
+  -- 1. Insert valid GoTrue user into auth.users (omitting generated confirmed_at column)
   insert into auth.users (
     instance_id,
     id,
@@ -30,7 +30,6 @@ begin
     is_super_admin,
     created_at,
     updated_at,
-    confirmed_at,
     email_change_token_current,
     email_change,
     email_change_token_new,
@@ -49,14 +48,13 @@ begin
     false,
     now(),
     now(),
-    now(),
     '',
     '',
     '',
     ''
   );
 
-  -- 2. Insert corresponding identity into auth.identities (Required for GoTrue password auth)
+  -- 2. Insert corresponding identity into auth.identities
   insert into auth.identities (
     id,
     user_id,
