@@ -214,10 +214,13 @@ create table if not exists public.project_payments (
   project_id uuid not null references public.projects(id) on delete cascade,
   amount numeric(12,2) not null check (amount > 0),
   currency text not null default 'USD',
-  status text not null default 'pending' check (status in ('pending','verified','failed')),
+  status text not null default 'pending',
   payment_method text default 'bank_transfer',
   transaction_id text,
+  payment_date timestamptz default now(),
   receipt_url text,
+  invoice_url text,
+  notes text,
   is_verified boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -227,10 +230,49 @@ create table if not exists public.delivery_assets (
   id uuid primary key default gen_random_uuid(),
   project_id uuid not null references public.projects(id) on delete cascade,
   title text not null,
-  file_url text not null,
+  description text,
+  asset_type text default 'file',
+  asset_url text,
+  file_url text,
+  storage_path text,
   unlock_type text not null default 'immediate',
   is_manual_unlocked boolean not null default false,
-  created_at timestamptz not null default now()
+  is_archived boolean not null default false,
+  sort_order integer default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz default now()
+);
+
+create table if not exists public.project_sections (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references public.projects(id) on delete cascade,
+  name text not null,
+  sort_order integer default 0,
+  content text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz default now()
+);
+
+create table if not exists public.folders (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid references public.projects(id) on delete cascade,
+  parent_id uuid references public.folders(id) on delete cascade,
+  name text not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz default now()
+);
+
+create table if not exists public.files (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid references public.projects(id) on delete cascade,
+  folder_id uuid references public.folders(id) on delete set null,
+  name text not null,
+  storage_path text not null,
+  file_size bigint default 0,
+  mime_type text,
+  uploaded_by uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz default now()
 );
 
 -- 14. TELEMETRY & ACTIVITY LOGS (Developer Telemetry)
@@ -334,6 +376,9 @@ alter table public.settings enable row level security;
 alter table public.activity_logs enable row level security;
 alter table public.project_payments enable row level security;
 alter table public.delivery_assets enable row level security;
+alter table public.project_sections enable row level security;
+alter table public.folders enable row level security;
+alter table public.files enable row level security;
 
 -- 18. RLS POLICIES
 create policy "admin_profiles_all" on public.profiles for all using (is_admin()) with check (is_admin());
@@ -351,6 +396,9 @@ create policy "admin_settings_all" on public.settings for all using (is_admin())
 create policy "admin_activity_logs_all" on public.activity_logs for all using (is_admin()) with check (is_admin());
 create policy "admin_payments_all" on public.project_payments for all using (is_admin()) with check (is_admin());
 create policy "admin_delivery_assets_all" on public.delivery_assets for all using (is_admin()) with check (is_admin());
+create policy "admin_project_sections_all" on public.project_sections for all using (is_admin()) with check (is_admin());
+create policy "admin_folders_all" on public.folders for all using (is_admin()) with check (is_admin());
+create policy "admin_files_all" on public.files for all using (is_admin()) with check (is_admin());
 
 create policy "public_read_share_links" on public.share_links for select using (true);
 create policy "portal_read_shared_projects" on public.projects for select using (
