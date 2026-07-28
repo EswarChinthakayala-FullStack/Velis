@@ -148,9 +148,13 @@ create table if not exists public.milestones (
   id uuid primary key default gen_random_uuid(),
   project_id uuid not null references public.projects(id) on delete cascade,
   title text not null,
+  name text,
   description text,
+  notes text,
+  progress integer default 0,
   status text not null default 'pending' check (status in ('pending','in_progress','completed')),
   due_date date,
+  completion_date timestamptz,
   sort_order integer default 0,
   created_at timestamptz not null default now()
 );
