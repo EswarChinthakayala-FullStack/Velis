@@ -1,7 +1,30 @@
 -- ============================================================================
--- VELIS ENTERPRISE DATABASE SCHEMA (PRODUCTION RELEASE v1.0)
--- Optimized for New Supabase Projects (SQL Editor One-Click Execution)
+-- 0. CLEANUP EXISTING TABLES (FRESH DATABASE RESET)
 -- ============================================================================
+drop table if exists public.delivery_assets cascade;
+drop table if exists public.project_payments cascade;
+drop table if exists public.activity_logs cascade;
+drop table if exists public.settings cascade;
+drop table if exists public.tags cascade;
+drop table if exists public.deployments cascade;
+drop table if exists public.notes cascade;
+drop table if exists public.changelog_entries cascade;
+drop table if exists public.share_links cascade;
+drop table if exists public.screenshots cascade;
+drop table if exists public.files cascade;
+drop table if exists public.folders cascade;
+drop table if exists public.project_documents cascade;
+drop table if exists public.documents cascade;
+drop table if exists public.milestones cascade;
+drop table if exists public.task_attachments cascade;
+drop table if exists public.tasks cascade;
+drop table if exists public.project_updates cascade;
+drop table if exists public.github_repositories cascade;
+drop table if exists public.project_sections cascade;
+drop table if exists public.project_technologies cascade;
+drop table if exists public.projects cascade;
+drop table if exists public.clients cascade;
+drop table if exists public.profiles cascade;
 
 -- 1. EXTENSIONS
 create extension if not exists "uuid-ossp";
