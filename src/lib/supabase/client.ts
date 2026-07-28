@@ -21,17 +21,16 @@ if (!supabaseAnonKey || typeof supabaseAnonKey !== 'string' || supabaseAnonKey.t
   throw new Error('Missing required environment variable:\n\nVITE_SUPABASE_ANON_KEY');
 }
 
-const isVercel = typeof window !== 'undefined' && window.location.hostname.endsWith('.vercel.app');
-const supabaseUrl = isVercel ? `${window.location.origin}/supabase-api` : envUrl;
+const supabaseUrl = envUrl;
 
 // ============================================================================
 // 2. Client Configuration & Resilient Fetch
 // ============================================================================
 
-// Queue & concurrency control to prevent HTTP/2 stream overload & connection resets
+// Queue & concurrency control to execute all network requests strictly in series (concurrency = 1)
 let activeFetches = 0;
 const fetchQueue: (() => void)[] = [];
-const MAX_CONCURRENT_FETCHES = 5;
+const MAX_CONCURRENT_FETCHES = 1;
 
 async function acquireFetchSlot(): Promise<void> {
   if (activeFetches < MAX_CONCURRENT_FETCHES) {
@@ -46,7 +45,9 @@ function releaseFetchSlot(): void {
   activeFetches--;
   if (fetchQueue.length > 0) {
     const next = fetchQueue.shift();
-    if (next) next();
+    if (next) {
+      setTimeout(next, 50);
+    }
   }
 }
 
