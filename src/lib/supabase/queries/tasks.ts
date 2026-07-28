@@ -24,7 +24,7 @@ export const TASK_QUERY_KEYS = {
 };
 
 const TASKS_SELECT_COLUMNS =
-  'id, project_id, title, description, module, priority, status, due_date, progress, labels, sort_order, created_at, updated_at, projects(id, name, color), task_attachments(id, task_id, file_name, file_url, created_at)';
+  'id, project_id, title, description, module, priority, status, due_date, progress, labels, sort_order, created_at, updated_at';
 
 export function mapRowToTaskItem(row: any): TaskItem {
   const projectData = row.projects;
@@ -79,7 +79,47 @@ export async function fetchTasks(projectId?: string): Promise<TaskItem[]> {
     }
 
     const rawTasks = data || [];
-    return rawTasks.map(mapRowToTaskItem);
+
+    // Secondary project lookup to keep task query URL parameters short
+    const projectIds = Array.from(new Set(rawTasks.map((t: any) => t.project_id).filter(Boolean)));
+    const projectMap: Record<string, { name: string; color?: string }> = {};
+
+    if (projectIds.length > 0) {
+      try {
+        const { data: projectsData } = await (supabase as any)
+          .from('projects')
+          .select('id, name, color')
+          .in('id', projectIds);
+
+        (projectsData || []).forEach((p: any) => {
+          projectMap[String(p.id)] = { name: String(p.name), color: p.color ? String(p.color) : undefined };
+        });
+      } catch {
+        // Fallback
+      }
+    }
+
+    return rawTasks.map((row: any) => {
+      const projInfo = row.project_id ? projectMap[String(row.project_id)] : undefined;
+      return {
+        id: String(row.id),
+        projectId: String(row.project_id),
+        projectName: projInfo?.name,
+        projectColor: projInfo?.color,
+        title: String(row.title),
+        description: row.description ? String(row.description) : undefined,
+        module: row.module ? String(row.module) : undefined,
+        priority: (row.priority || 'medium') as TaskPriority,
+        status: (row.status || 'todo') as TaskStatus,
+        dueDate: row.due_date ? String(row.due_date) : undefined,
+        progress: Number(row.progress ?? 0),
+        labels: Array.isArray(row.labels) ? row.labels.map(String) : [],
+        attachments: [],
+        sortOrder: Number(row.sort_order ?? 0),
+        createdAt: String(row.created_at),
+        updatedAt: String(row.updated_at),
+      };
+    });
   } catch (err: any) {
     const normalized = normalizeClientError(err);
     throw new Error(normalized.message);
