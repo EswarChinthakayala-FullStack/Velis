@@ -32,7 +32,7 @@ export async function fetchProjectChangelog(projectId?: string | null): Promise<
   try {
     let query = (supabase as any)
       .from('changelog_entries')
-      .select('id, project_id, version, title, summary, description, release_type, created_at, updated_at')
+      .select('id, project_id, version, title, description, created_at')
       .order('created_at', { ascending: false });
 
     if (projectId && projectId !== 'all') {
@@ -40,26 +40,10 @@ export async function fetchProjectChangelog(projectId?: string | null): Promise<
     }
 
     const { data, error } = await query;
-    if (error) throw error;
+    if (error) return [];
     return (data || []).map(mapRowToEntry);
   } catch (err: any) {
-    // Fallback query for minimalist schema
-    try {
-      let fallbackQuery = (supabase as any)
-        .from('changelog_entries')
-        .select('id, project_id, version, title, description, created_at')
-        .order('created_at', { ascending: false });
-
-      if (projectId && projectId !== 'all') {
-        fallbackQuery = fallbackQuery.eq('project_id', projectId);
-      }
-
-      const { data: fallbackData, error: fallbackError } = await fallbackQuery;
-      if (fallbackError) throw fallbackError;
-      return (fallbackData || []).map(mapRowToEntry);
-    } catch (fallbackErr: any) {
-      return [];
-    }
+    return [];
   }
 }
 
