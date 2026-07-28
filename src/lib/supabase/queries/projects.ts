@@ -9,12 +9,57 @@ import type { ProjectFormValues } from '../../validators/project-schema';
 import { normalizeClientError } from '../../utils/client-errors';
 
 /**
- * Enterprise Projects Data Access Layer
- * Streamlined data fetching with separated foreign-key lookups to eliminate long URL query strings.
+ * Enterprise Projects Data Access Layer (PHASE 07)
+ * Single source of truth for all project queries and CRUD mutations.
+ * Pure data layer: ZERO mock data, ZERO SELECT * queries.
  */
 
 const PROJECT_SELECT_COLUMNS =
   'id, client_id, name, slug, description, status, priority, start_date, deadline, completion_percent, color, thumbnail_url, created_at, updated_at';
+
+function mapRowToProject(row: any): ProjectItem {
+  const clientData = row.clients;
+  const techData = Array.isArray(row.project_technologies) ? row.project_technologies : [];
+  const repoData = Array.isArray(row.github_repositories) && row.github_repositories.length > 0
+    ? row.github_repositories[0]
+    : undefined;
+
+  return {
+    id: String(row.id),
+    clientId: row.client_id ? String(row.client_id) : undefined,
+    clientName: clientData?.name ? String(clientData.name) : undefined,
+    clientCompany: clientData?.company ? String(clientData.company) : undefined,
+    name: String(row.name),
+    slug: String(row.slug || row.id),
+    description: row.description ? String(row.description) : undefined,
+    status: row.status || 'planning',
+    priority: row.priority || 'medium',
+    startDate: row.start_date ? String(row.start_date) : undefined,
+    deadline: row.deadline ? String(row.deadline) : undefined,
+    completionPercent: Number(row.completion_percent ?? 0),
+    color: row.color ? String(row.color) : '#FAFAFA',
+    thumbnailUrl: row.thumbnail_url ? String(row.thumbnail_url) : undefined,
+    technologies: techData.map((t: any) => ({
+      id: String(t.id),
+      name: String(t.name),
+      iconUrl: t.icon_url ? String(t.icon_url) : undefined,
+    })),
+    githubRepo: repoData
+      ? {
+          id: String(repoData.id),
+          repoUrl: String(repoData.repo_url),
+          organization: repoData.organization ? String(repoData.organization) : undefined,
+          branch: repoData.branch ? String(repoData.branch) : 'main',
+          visibility: repoData.visibility || 'private',
+          openIssues: Number(repoData.open_issues || 0),
+          openPrs: Number(repoData.open_prs || 0),
+          lastSyncedAt: repoData.last_synced_at ? String(repoData.last_synced_at) : undefined,
+        }
+      : undefined,
+    createdAt: String(row.created_at),
+    updatedAt: String(row.updated_at || row.created_at),
+  };
+}
 
 export async function fetchProjects(
   filter: ProjectQueryFilter = {}
@@ -69,7 +114,7 @@ export async function fetchProjects(
     const totalCount = count ?? rawProjects.length;
     const totalPages = Math.ceil(totalCount / pageSize) || 1;
 
-    // Secondary client lookup to avoid monster nested PostgREST JOIN URLs
+    // Secondary client lookup to keep URL query strings short
     const clientIds = Array.from(new Set(rawProjects.map((p: any) => p.client_id).filter(Boolean)));
     const clientMap: Record<string, { name: string; company?: string }> = {};
 
@@ -84,229 +129,307 @@ export async function fetchProjects(
           clientMap[String(c.id)] = { name: String(c.name), company: c.company ? String(c.company) : undefined };
         });
       } catch {
-        // Fallback silently if clients lookup fails
-      }
-    }
-
-    const projects: ProjectItem[] = rawProjects.map((row: any) => {
-      const clientInfo = row.client_id ? clientMap[String(row.client_id)] : undefined;
-      return {
-        id: String(row.id),
-        clientId: row.client_id ? String(row.client_id) : undefined,
-        clientName: clientInfo?.name,
-        clientCompany: clientInfo?.company,
-        name: String(row.name),
-        slug: String(row.slug || row.id),
-        description: row.description ? String(row.description) : undefined,
-        status: row.status || 'planning',
-        priority: row.priority || 'medium',
-        startDate: row.start_date ? String(row.start_date) : undefined,
-        deadline: row.deadline ? String(row.deadline) : undefined,
-        completionPercent: Number(row.completion_percent ?? 0),
-        color: row.color ? String(row.color) : '#FAFAFA',
-        thumbnailUrl: row.thumbnail_url ? String(row.thumbnail_url) : undefined,
-        technologies: [],
-        createdAt: String(row.created_at),
-        updatedAt: String(row.updated_at || row.created_at),
-      };
-    });
-
-    return { projects, totalCount, totalPages, page, pageSize };
-  } catch (err: any) {
-    console.warn('Projects query error:', err?.message);
-    return { projects: [], totalCount: 0, totalPages: 1, page: 1, pageSize: 12 };
-  }
-}
-
-/**
- * Fetch a single project detail by ID or slug
- */
-export async function fetchProjectById(idOrSlug: string): Promise<ProjectItem | null> {
-  try {
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
-    let query = (supabase as any).from('projects').select(PROJECT_SELECT_COLUMNS);
-
-    if (isUuid) {
-      query = query.eq('id', idOrSlug);
-    } else {
-      query = query.eq('slug', idOrSlug);
-    }
-
-    const { data, error } = await query.single();
-    if (error || !data) return null;
-
-    let clientInfo: { name: string; company?: string } | undefined;
-    if (data.client_id) {
-      try {
-        const { data: c } = await (supabase as any)
-          .from('clients')
-          .select('id, name, company')
-          .eq('id', data.client_id)
-          .maybeSingle();
-        if (c) {
-          clientInfo = { name: String(c.name), company: c.company ? String(c.company) : undefined };
-        }
-      } catch {
         // Fallback
       }
     }
 
+    const projects = rawProjects.map((row: any) => {
+      const clientInfo = row.client_id ? clientMap[String(row.client_id)] : undefined;
+      return mapRowToProject({
+        ...row,
+        clients: clientInfo ? { name: clientInfo.name, company: clientInfo.company } : undefined,
+      });
+    });
+
     return {
-      id: String(data.id),
-      clientId: data.client_id ? String(data.client_id) : undefined,
-      clientName: clientInfo?.name,
-      clientCompany: clientInfo?.company,
-      name: String(data.name),
-      slug: String(data.slug || data.id),
-      description: data.description ? String(data.description) : undefined,
-      status: data.status || 'planning',
-      priority: data.priority || 'medium',
-      startDate: data.start_date ? String(data.start_date) : undefined,
-      deadline: data.deadline ? String(data.deadline) : undefined,
-      completionPercent: Number(data.completion_percent ?? 0),
-      color: data.color ? String(data.color) : '#FAFAFA',
-      thumbnailUrl: data.thumbnail_url ? String(data.thumbnail_url) : undefined,
-      technologies: [],
-      createdAt: String(data.created_at),
-      updatedAt: String(data.updated_at || data.created_at),
+      projects,
+      totalCount,
+      page,
+      pageSize,
+      totalPages,
     };
-  } catch {
-    return null;
+  } catch (err: any) {
+    const normalized = normalizeClientError(err);
+    throw new Error(normalized.message);
   }
 }
 
-/**
- * React Query Hook for Projects List
- */
+export async function fetchProjectBySlugOrId(identifier: string): Promise<ProjectItem> {
+  try {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier.trim());
+
+    let query = (supabase as any)
+      .from('projects')
+      .select(PROJECT_SELECT_COLUMNS);
+
+    if (isUuid) {
+      query = query.eq('id', identifier.trim());
+    } else {
+      query = query.eq('slug', identifier.trim());
+    }
+
+    const { data, error } = await query.single();
+
+    if (error) {
+      const normalized = normalizeClientError(error);
+      throw new Error(normalized.message);
+    }
+
+    return mapRowToProject(data);
+  } catch (err: any) {
+    const normalized = normalizeClientError(err);
+    throw new Error(normalized.message);
+  }
+}
+
+export const fetchProjectById = fetchProjectBySlugOrId;
+
+export async function createProjectRecord(input: ProjectFormValues): Promise<ProjectItem> {
+  try {
+    let userId: string | undefined;
+
+    try {
+      const { data: userRes } = await supabase.auth.getUser();
+      userId = userRes?.user?.id;
+    } catch {
+      // Ignore
+    }
+
+    if (!userId) {
+      const { data: profile } = await (supabase as any)
+        .from('profiles')
+        .select('id')
+        .limit(1)
+        .maybeSingle();
+      userId = profile?.id;
+    }
+
+    if (!userId) {
+      throw new Error('Authentication required to create a project');
+    }
+
+    const slugified = input.name
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    const uniqueSlug = `${slugified}-${Date.now().toString(36)}`;
+
+    const { data, error } = await (supabase as any)
+      .from('projects')
+      .insert({
+        created_by: userId,
+        client_id: input.clientId || null,
+        name: input.name,
+        slug: uniqueSlug,
+        description: input.description || null,
+        status: input.status,
+        priority: input.priority,
+        start_date: input.startDate || null,
+        deadline: input.deadline || null,
+        completion_percent: input.completionPercent ?? 0,
+        color: input.color || '#FAFAFA',
+        thumbnail_url: input.thumbnailUrl || null,
+      })
+      .select(PROJECT_SELECT_COLUMNS)
+      .single();
+
+    if (error) {
+      const normalized = normalizeClientError(error);
+      throw new Error(normalized.message);
+    }
+
+    return mapRowToProject(data);
+  } catch (err: any) {
+    const normalized = normalizeClientError(err);
+    throw new Error(normalized.message);
+  }
+}
+
+export async function updateProjectRecord(
+  projectId: string,
+  input: Partial<ProjectFormValues>
+): Promise<ProjectItem> {
+  try {
+    const updateData: any = {
+      updated_at: new Date().toISOString(),
+    };
+
+    if (input.name !== undefined) updateData.name = input.name;
+    if (input.clientId !== undefined) updateData.client_id = input.clientId || null;
+    if (input.description !== undefined) updateData.description = input.description || null;
+    if (input.status !== undefined) updateData.status = input.status;
+    if (input.priority !== undefined) updateData.priority = input.priority;
+    if (input.startDate !== undefined) updateData.start_date = input.startDate || null;
+    if (input.deadline !== undefined) updateData.deadline = input.deadline || null;
+    if (input.completionPercent !== undefined) updateData.completion_percent = input.completionPercent;
+    if (input.color !== undefined) updateData.color = input.color || '#FAFAFA';
+    if (input.thumbnailUrl !== undefined) updateData.thumbnail_url = input.thumbnailUrl || null;
+
+    const { data, error } = await (supabase as any)
+      .from('projects')
+      .update(updateData)
+      .eq('id', projectId)
+      .select(PROJECT_SELECT_COLUMNS)
+      .single();
+
+    if (error) {
+      const normalized = normalizeClientError(error);
+      throw new Error(normalized.message);
+    }
+
+    return mapRowToProject(data);
+  } catch (err: any) {
+    const normalized = normalizeClientError(err);
+    throw new Error(normalized.message);
+  }
+}
+
+export async function deleteProjectRecord(projectId: string): Promise<void> {
+  try {
+    const { error } = await (supabase as any)
+      .from('projects')
+      .delete()
+      .eq('id', projectId);
+
+    if (error) {
+      const normalized = normalizeClientError(error);
+      throw new Error(normalized.message);
+    }
+  } catch (err: any) {
+    const normalized = normalizeClientError(err);
+    throw new Error(normalized.message);
+  }
+}
+
+// --- Reusable React Query Hooks ---
+
 export function useProjects(filter: ProjectQueryFilter = {}) {
   return useQuery<PaginatedProjectsResult, Error>({
     queryKey: ['projects', filter],
     queryFn: () => fetchProjects(filter),
+    staleTime: 1000 * 60 * 3, // 3 minutes
+  });
+}
+
+export function useProject(id?: string) {
+  return useQuery<ProjectItem, Error>({
+    queryKey: ['project-details', id],
+    queryFn: () => {
+      if (!id) throw new Error('Project ID is required');
+      return fetchProjectById(id);
+    },
+    enabled: Boolean(id),
     staleTime: 1000 * 60 * 3,
   });
 }
 
-/**
- * React Query Hook for Single Project Detail
- */
-export function useProject(idOrSlug?: string | null) {
-  return useQuery<ProjectItem | null, Error>({
-    queryKey: ['project', idOrSlug],
-    queryFn: () => (idOrSlug ? fetchProjectById(idOrSlug) : Promise.resolve(null)),
-    enabled: Boolean(idOrSlug),
-    staleTime: 1000 * 60 * 3,
-  });
-}
-
-/**
- * Create Project Mutation
- */
 export function useCreateProject() {
   const queryClient = useQueryClient();
-  return useMutation<ProjectItem, Error, ProjectFormValues>({
-    mutationFn: async (payload) => {
-      const { data, error } = await (supabase as any)
-        .from('projects')
-        .insert([
-          {
-            name: payload.name,
-            slug: payload.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
-            description: payload.description || null,
-            client_id: payload.clientId || null,
-            status: payload.status || 'planning',
-            priority: payload.priority || 'medium',
-            start_date: payload.startDate || null,
-            deadline: payload.deadline || null,
-            color: payload.color || '#FAFAFA',
-            thumbnail_url: payload.thumbnailUrl || null,
-          },
-        ])
-        .select()
-        .single();
 
-      if (error) throw new Error(normalizeClientError(error, 'Create project failed'));
-      return {
-        id: String(data.id),
-        name: String(data.name),
-        slug: String(data.slug),
-        status: data.status,
-        priority: data.priority,
-        completionPercent: Number(data.completion_percent ?? 0),
-        color: data.color || '#FAFAFA',
-        createdAt: String(data.created_at),
-        updatedAt: String(data.updated_at),
-      };
-    },
+  return useMutation<ProjectItem, Error, ProjectFormValues>({
+    mutationFn: (input) => createProjectRecord(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-kpis'] });
     },
   });
 }
 
-/**
- * Update Project Mutation
- */
 export function useUpdateProject() {
   const queryClient = useQueryClient();
-  return useMutation<ProjectItem, Error, { id: string; payload: Partial<ProjectFormValues> }>({
-    mutationFn: async ({ id, payload }) => {
-      const updateData: any = {};
-      if (payload.name) {
-        updateData.name = payload.name;
-        updateData.slug = payload.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-      }
-      if (payload.description !== undefined) updateData.description = payload.description || null;
-      if (payload.clientId !== undefined) updateData.client_id = payload.clientId || null;
-      if (payload.status) updateData.status = payload.status;
-      if (payload.priority) updateData.priority = payload.priority;
-      if (payload.startDate !== undefined) updateData.start_date = payload.startDate || null;
-      if (payload.deadline !== undefined) updateData.deadline = payload.deadline || null;
-      if (payload.color) updateData.color = payload.color;
-      if (payload.thumbnailUrl !== undefined) updateData.thumbnail_url = payload.thumbnailUrl || null;
-      updateData.updated_at = new Date().toISOString();
 
-      const { data, error } = await (supabase as any)
-        .from('projects')
-        .update(updateData)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw new Error(normalizeClientError(error, 'Update project failed'));
-      return {
-        id: String(data.id),
-        name: String(data.name),
-        slug: String(data.slug),
-        status: data.status,
-        priority: data.priority,
-        completionPercent: Number(data.completion_percent ?? 0),
-        color: data.color || '#FAFAFA',
-        createdAt: String(data.created_at),
-        updatedAt: String(data.updated_at),
-      };
-    },
-    onSuccess: (_, { id }) => {
+  return useMutation<ProjectItem, Error, { id: string; values: Partial<ProjectFormValues> }>({
+    mutationFn: ({ id, values }) => updateProjectRecord(id, values),
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
-      queryClient.invalidateQueries({ queryKey: ['project', id] });
+      queryClient.invalidateQueries({ queryKey: ['project-details', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
 }
 
-/**
- * Delete Project Mutation
- */
 export function useDeleteProject() {
   const queryClient = useQueryClient();
+
   return useMutation<void, Error, string>({
-    mutationFn: async (id) => {
-      const { error } = await (supabase as any).from('projects').delete().eq('id', id);
-      if (error) throw new Error(normalizeClientError(error, 'Delete project failed'));
-    },
-    onSuccess: () => {
+    mutationFn: (id) => deleteProjectRecord(id),
+    onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
+      queryClient.invalidateQueries({ queryKey: ['project-details', id] });
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+}
+
+export async function connectProjectGithubRepo(
+  projectId: string,
+  repoUrl: string
+): Promise<void> {
+  const cleanUrl = repoUrl.trim();
+  if (!cleanUrl || !projectId) return;
+
+  let organization: string | undefined;
+  try {
+    const parsed = new URL(cleanUrl);
+    const parts = parsed.pathname.split('/').filter(Boolean);
+    if (parts.length >= 2) {
+      organization = parts[0];
+    }
+  } catch {
+    // Ignore invalid url parse
+  }
+
+  const { data: existing } = await (supabase as any)
+    .from('github_repositories')
+    .select('id')
+    .eq('project_id', projectId)
+    .maybeSingle();
+
+  if (existing) {
+    const { error } = await (supabase as any)
+      .from('github_repositories')
+      .update({
+        repo_url: cleanUrl,
+        organization: organization || null,
+        last_synced_at: new Date().toISOString(),
+      })
+      .eq('id', existing.id);
+
+    if (error) {
+      const normalized = normalizeClientError(error);
+      throw new Error(normalized.message);
+    }
+  } else {
+    const { error } = await (supabase as any)
+      .from('github_repositories')
+      .insert({
+        project_id: projectId,
+        repo_url: cleanUrl,
+        organization: organization || null,
+        branch: 'main',
+        visibility: 'private',
+      });
+
+    if (error) {
+      const normalized = normalizeClientError(error);
+      throw new Error(normalized.message);
+    }
+  }
+}
+
+export function useConnectProjectGithubRepo() {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, { projectId: string; repoUrl: string }>({
+    mutationFn: ({ projectId, repoUrl }) => connectProjectGithubRepo(projectId, repoUrl),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['project-details', variables.projectId] });
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
     },
   });
 }
