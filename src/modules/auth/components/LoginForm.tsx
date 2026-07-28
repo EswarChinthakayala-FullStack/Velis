@@ -87,7 +87,35 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
       });
 
       if (error) {
-        throw error;
+        // Fallback: If account does not exist or GoTrue credentials are fresh, attempt registration
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: data.email,
+          password: data.password,
+          options: {
+            data: {
+              full_name: 'Eswar Chinthakayala',
+            },
+          },
+        });
+
+        if (signUpError) {
+          throw error;
+        }
+
+        if (signUpData.session) {
+          return signUpData;
+        }
+
+        // Re-attempt sign in if email confirmation was auto-completed
+        const { data: retryAuth, error: retryError } = await supabase.auth.signInWithPassword({
+          email: data.email,
+          password: data.password,
+        });
+
+        if (retryError) {
+          throw error;
+        }
+        return retryAuth;
       }
       return authData;
     },
