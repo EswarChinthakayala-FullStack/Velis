@@ -69,6 +69,7 @@ create table if not exists public.clients (
   website text,
   notes text,
   github_username text,
+  social_links jsonb default '{}'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -112,7 +113,8 @@ create table if not exists public.github_repositories (
   open_issues integer default 0,
   open_prs integer default 0,
   last_synced_at timestamptz default now(),
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  updated_at timestamptz default now()
 );
 
 -- 8. TASKS & TASK ATTACHMENTS (Tasks & Kanban)
