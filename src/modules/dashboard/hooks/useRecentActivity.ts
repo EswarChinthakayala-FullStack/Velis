@@ -21,13 +21,31 @@ export function useRecentActivity() {
       try {
         const { data: logs, error } = await (supabase as any)
           .from('activity_logs')
-          .select('id, actor_id, action, entity_type, entity_id, metadata, created_at, profiles!actor_id(full_name, avatar_url)')
+          .select('id, actor_id, action, entity_type, entity_id, metadata, created_at')
           .order('created_at', { ascending: false })
           .limit(20);
 
         if (!error && logs && logs.length > 0) {
+          const actorIds = Array.from(new Set(logs.map((l: any) => l.actor_id).filter(Boolean)));
+          const profileMap: Record<string, { full_name?: string; avatar_url?: string }> = {};
+
+          if (actorIds.length > 0) {
+            try {
+              const { data: profiles } = await (supabase as any)
+                .from('profiles')
+                .select('id, full_name, avatar_url')
+                .in('id', actorIds);
+
+              (profiles || []).forEach((p: any) => {
+                profileMap[String(p.id)] = { full_name: p.full_name, avatar_url: p.avatar_url };
+              });
+            } catch {
+              // Fallback
+            }
+          }
+
           return logs.map((log: any) => {
-            const profile = log.profiles;
+            const profile = log.actor_id ? profileMap[String(log.actor_id)] : undefined;
             const metadata = log.metadata || {};
             const actorName = profile?.full_name || metadata.actor_name || 'System Admin';
             const entityName = metadata.entity_name || metadata.title || log.entity_type || 'Workspace Item';

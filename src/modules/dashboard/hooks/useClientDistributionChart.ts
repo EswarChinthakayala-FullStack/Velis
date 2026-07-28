@@ -11,19 +11,37 @@ export function useClientDistributionChart() {
     queryKey: ['dashboard-chart-client-distribution'],
     queryFn: async () => {
       try {
-        const { data, error } = await (supabase as any)
+        const { data: projects, error } = await (supabase as any)
           .from('projects')
-          .select('id, client_id, clients(name)');
+          .select('id, client_id');
 
-        if (error) {
-          console.warn('Client distribution query warning:', error.message);
+        if (error || !projects) {
+          console.warn('Client distribution query warning:', error?.message);
           return [];
+        }
+
+        const clientIds = Array.from(new Set(projects.map((p: any) => p.client_id).filter(Boolean)));
+        const clientNames: Record<string, string> = {};
+
+        if (clientIds.length > 0) {
+          try {
+            const { data: clientsData } = await (supabase as any)
+              .from('clients')
+              .select('id, name')
+              .in('id', clientIds);
+
+            (clientsData || []).forEach((c: any) => {
+              clientNames[String(c.id)] = String(c.name);
+            });
+          } catch {
+            // Fallback
+          }
         }
 
         const clientCounts: Record<string, number> = {};
 
-        (data || []).forEach((p: any) => {
-          const clientName = p.clients?.name || 'Internal / Direct';
+        projects.forEach((p: any) => {
+          const clientName = p.client_id ? clientNames[String(p.client_id)] || 'Internal / Direct' : 'Internal / Direct';
           clientCounts[clientName] = (clientCounts[clientName] || 0) + 1;
         });
 
