@@ -337,12 +337,13 @@ export function useCreateDeliveryAsset() {
           title: input.title,
           description: input.description || null,
           asset_type: input.assetType,
-          asset_url: finalAssetUrl,
+          asset_url: finalAssetUrl || '',
+          file_url: finalAssetUrl || '',
           storage_path: storagePath,
           unlock_type: input.unlockType,
           is_manual_unlocked: input.isManualUnlocked ?? false,
         })
-        .select('*')
+        .select('id, project_id, title, unlock_type, is_manual_unlocked, created_at')
         .single();
 
       if (error) throw error;
