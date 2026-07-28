@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+  <head>
+    <!-- Core Character Set & Viewport -->
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover"
+    />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <!-- Page Title -->
+    <title>Velis — Premium Freelance Project Management Platform</title>
+
+    <!-- Primary Metadata -->
+    <meta
+      name="description"
+      content="Velis is a premium freelance project management and client collaboration platform built for developers, freelancers, and agencies to manage projects, GitHub repositories, technical documentation, timelines, files, and client portals."
+    />
+    <meta
+      name="keywords"
+      content="project management, freelance developer platform, client collaboration portal, github repository management, technical documentation software, agency dashboard, developer telemetry, liquid glass ui, velis"
+    />
+    <meta name="author" content="Velis Design Systems Team" />
+    <meta name="application-name" content="Velis" />
+    <meta name="generator" content="Velis Enterprise Engine 2026" />
+    <meta
+      name="robots"
+      content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    />
+    <meta name="referrer" content="origin-when-cross-origin" />
+    <meta name="format-detection" content="telephone=no, date=no, address=no, email=no" />
+
+    <!-- Theme & Color Scheme -->
+    <meta name="theme-color" content="#050505" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Velis" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://velis.vercel.app" />
+    <meta property="og:title" content="Velis — Premium Freelance Project Management Platform" />
+    <meta
+      property="og:description"
+      content="Streamline freelance projects, GitHub repos, technical documentation, timelines, and client portals in one high-performance Liquid Glass interface."
+    />
+    <meta property="og:image" content="https://velis.vercel.app/og-cover.png" />
+    <meta property="og:site_name" content="Velis Workspace" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@velisapp" />
+    <meta name="twitter:creator" content="@velisapp" />
+    <meta name="twitter:title" content="Velis — Premium Freelance Project Management Platform" />
+    <meta
+      name="twitter:description"
+      content="Streamline freelance projects, GitHub repos, technical documentation, timelines, and client portals in one high-performance Liquid Glass interface."
+    />
+    <meta name="twitter:image" content="https://velis.vercel.app/twitter-card.png" />
+
+    <!-- Icons & Manifest -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <!-- Font Optimization & Preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Initial Inline Styles for Centered Pre-React Loading Shell -->
+    <style>
+      :root {
+        --velis-bg: #050505;
+        --velis-surface: rgba(24, 24, 27, 0.72);
+        --velis-border: rgba(255, 255, 255, 0.08);
+      }
+
+      *, *::before, *::after {
+        box-sizing: border-box;
+      }
+
+      html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        min-height: 100vh;
+        background-color: var(--velis-bg);
+        color: #FAFAFA;
+        font-family: 'Geist', 'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        overflow-x: hidden;
+        overflow-y: auto;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      #root {
+        width: 100%;
+        height: 100%;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* Centered Splash Screen Container */
+      .velis-splash {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        background-color: #050505;
+        background-image: 
+          radial-gradient(circle at 50% 50%, rgba(63, 63, 70, 0.15) 0%, transparent 60%),
+          radial-gradient(circle at 50% 100%, rgba(24, 24, 27, 0.2) 0%, transparent 70%);
+      }
+
+      /* Center Card Box */
+      .velis-splash-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 32px 40px;
+        border-radius: 8px; /* rounded-lg */
+        background: rgba(17, 17, 19, 0.75);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      }
+
+      /* Glowing Badge Emblem */
+      .velis-emblem {
+        width: 60px;
+        height: 60px;
+        border-radius: 8px; /* rounded-lg */
+        background: linear-gradient(135deg, rgba(39, 39, 42, 0.9), rgba(17, 17, 19, 0.95));
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 24px;
+        font-family: monospace;
+        color: #FAFAFA;
+        letter-spacing: -0.05em;
+        margin-bottom: 20px;
+        animation: emblemPulse 2s ease-in-out infinite alternate;
+      }
+
+      /* Title & Subtitle */
+      .velis-splash-title {
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 0.35em;
+        text-transform: uppercase;
+        color: #FAFAFA;
+        margin-bottom: 20px;
+        margin-left: 0.35em;
+      }
+
+      /* Monochrome Progress Line */
+      .velis-progress-track {
+        width: 160px;
+        height: 2.5px;
+        background: rgba(39, 39, 42, 0.6);
+        border-radius: 9999px;
+        overflow: hidden;
+        position: relative;
+        margin: 0 auto 16px auto;
+      }
+
+      .velis-progress-bar {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: -50%;
+        width: 50%;
+        background: linear-gradient(90deg, transparent, #FAFAFA, transparent);
+        animation: velisShimmer 1.5s ease-in-out infinite;
+      }
+
+      .velis-splash-status {
+        font-size: 11px;
+        font-family: monospace;
+        color: #A1A1AA;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      @keyframes emblemPulse {
+        0% {
+          border-color: rgba(255, 255, 255, 0.12);
+          box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+        100% {
+          border-color: rgba(255, 255, 255, 0.28);
+          box-shadow: 0 16px 40px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 0 24px rgba(255, 255, 255, 0.1);
+        }
+      }
+
+      @keyframes velisShimmer {
+        0% {
+          left: -50%;
+        }
+        100% {
+          left: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- React Mount Root with Perfectly Centered Pre-React Splash Shell -->
+    <div id="root">
+      <div class="velis-splash" id="velis-initial-splash">
+        <div class="velis-splash-card">
+          <div class="velis-emblem">
+            <svg width="36" height="36" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <g>
+                <path d="M 16 2 C 23.732 2, 30 8.268, 30 16 C 30 20.5, 27 24.5, 23.5 26.5 L 16 16 Z" fill="#FAFAFA" fill-opacity="0.95" />
+                <path d="M 30 16 C 30 23.732, 23.732 30, 16 30 C 11.5 30, 7.5 27, 5.5 23.5 L 16 16 Z" fill="#FAFAFA" fill-opacity="0.75" />
+                <path d="M 16 30 C 8.268 30, 2 23.732, 2 16 C 2 11.5, 5 7.5, 8.5 5.5 L 16 16 Z" fill="#FAFAFA" fill-opacity="0.55" />
+                <path d="M 2 16 C 2 8.268, 8.268 2, 16 2 C 20.5 2, 24.5 5, 26.5 8.5 L 16 16 Z" fill="#FAFAFA" fill-opacity="0.85" />
+                <circle cx="16" cy="16" r="3.5" fill="#050505" />
+                <circle cx="16" cy="16" r="1.5" fill="#FAFAFA" />
+              </g>
+            </svg>
+          </div>
+          <div class="velis-splash-title">VELIS</div>
+          <div class="velis-progress-track">
+            <div class="velis-progress-bar"></div>
+          </div>
+          <div class="velis-splash-status">Initializing Workspace...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Application Entry Module -->
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
