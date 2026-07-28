@@ -1,5 +1,5 @@
 -- ============================================================================
--- VELIS ENTERPRISE DATABASE SCHEMA (PRODUCTION RELEASE v2.0)
+-- ESFLOW ENTERPRISE DATABASE SCHEMA (PRODUCTION RELEASE v2.0)
 -- Streamlined for essential platform navigation pages & high performance.
 -- ============================================================================
 

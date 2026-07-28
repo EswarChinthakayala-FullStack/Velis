@@ -23,7 +23,7 @@ import type {
 } from '../types/settings';
 
 const DEFAULT_GENERAL: GeneralSettings = {
-  appName: 'Velis Studio',
+  appName: 'EsFlow Studio',
   appVersion: 'v2.4.0',
   environment: 'production',
   timezone: 'UTC',
