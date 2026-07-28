@@ -68,6 +68,7 @@ export async function resilientFetch(
     while (true) {
       try {
         const opts: RequestInit = init ? { ...init } : {};
+        opts.credentials = 'omit';
         return await fetch(targetUrl, opts);
       } catch (err: any) {
         attempt++;
