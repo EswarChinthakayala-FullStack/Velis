@@ -17,8 +17,16 @@ import type {
 const BASIC_PROFILE_COLUMNS = 'id, full_name, email, avatar_url, role, created_at';
 const FULL_PROFILE_COLUMNS = 'id, full_name, email, avatar_url, role, username, company, github_username, created_at';
 
-// 1. Fetch Setting Row by Key from Supabase DB
+// 1. Fetch Setting Row by Key from Supabase DB with LocalStorage fallback
 export async function fetchSettingKey<T>(key: string, defaultValue: T): Promise<T> {
+  let localMerged = defaultValue;
+  try {
+    const localRaw = localStorage.getItem(`velis_setting_${key}`);
+    if (localRaw) {
+      localMerged = { ...defaultValue, ...JSON.parse(localRaw) };
+    }
+  } catch {}
+
   try {
     const { data, error } = await (supabase as any)
       .from('settings')
@@ -26,23 +34,26 @@ export async function fetchSettingKey<T>(key: string, defaultValue: T): Promise<
       .eq('key', key)
       .maybeSingle();
 
-    if (error) {
-      const msg = error.message || String(error);
-      if (!msg.includes('Failed') && !msg.includes('fetch')) {
-        console.warn(`Unable to fetch settings for key ${key}:`, msg);
-      }
-      return defaultValue;
+    if (error || !data || !data.value) {
+      return localMerged;
     }
-    if (!data || !data.value) return defaultValue;
 
-    return { ...defaultValue, ...data.value };
+    const merged = { ...defaultValue, ...data.value };
+    try {
+      localStorage.setItem(`velis_setting_${key}`, JSON.stringify(merged));
+    } catch {}
+    return merged;
   } catch (err: any) {
-    return defaultValue;
+    return localMerged;
   }
 }
 
-// 2. Save Setting Row by Key to Supabase DB
+// 2. Save Setting Row by Key to Supabase DB and LocalStorage
 export async function saveSettingKey<T>(key: string, value: T): Promise<T> {
+  try {
+    localStorage.setItem(`velis_setting_${key}`, JSON.stringify(value));
+  } catch {}
+
   try {
     const { data, error } = await (supabase as any)
       .from('settings')
