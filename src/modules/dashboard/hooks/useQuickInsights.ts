@@ -12,7 +12,7 @@ export function useQuickInsights() {
       try {
         const { count: taskCount, error: taskErr } = await (supabase as any)
           .from('tasks')
-          .select('id', { count: 'exact', head: true })
+          .select('id', { count: 'exact' })
           .eq('status', 'review');
         if (!taskErr && typeof taskCount === 'number') {
           reviewCount = taskCount;
@@ -24,7 +24,7 @@ export function useQuickInsights() {
       try {
         const { count: shareCount, error: shareErr } = await (supabase as any)
           .from('share_links')
-          .select('id', { count: 'exact', head: true })
+          .select('id', { count: 'exact' })
           .eq('is_active', true);
         if (!shareErr && typeof shareCount === 'number') {
           activeShareLinks = shareCount;

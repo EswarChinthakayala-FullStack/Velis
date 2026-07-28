@@ -21,7 +21,8 @@ if (!supabaseAnonKey || typeof supabaseAnonKey !== 'string' || supabaseAnonKey.t
   throw new Error('Missing required environment variable:\n\nVITE_SUPABASE_ANON_KEY');
 }
 
-const supabaseUrl = envUrl;
+const isVercel = typeof window !== 'undefined' && window.location.hostname.endsWith('.vercel.app');
+const supabaseUrl = isVercel ? `${window.location.origin}/supabase-api` : envUrl;
 
 // ============================================================================
 // 2. Client Configuration & Resilient Fetch

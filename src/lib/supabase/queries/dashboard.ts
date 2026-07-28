@@ -38,7 +38,7 @@ export function useKpiCounts(): UseQueryResult<DashboardKpiCounts, DashboardQuer
       // 1. Active Projects Count (in_progress, active, review, planning)
       const { count: activeProjects, error: activeErr } = await (supabase as any)
         .from('projects')
-        .select('id', { count: 'exact', head: true })
+        .select('id', { count: 'exact' })
         .in('status', ['in_progress', 'active', 'review', 'planning']);
 
       if (activeErr) throw { message: activeErr.message, code: activeErr.code };
@@ -46,7 +46,7 @@ export function useKpiCounts(): UseQueryResult<DashboardKpiCounts, DashboardQuer
       // 2. Completed Projects Count
       const { count: completedProjects, error: compErr } = await (supabase as any)
         .from('projects')
-        .select('id', { count: 'exact', head: true })
+        .select('id', { count: 'exact' })
         .eq('status', 'completed');
 
       if (compErr) throw { message: compErr.message, code: compErr.code };
@@ -54,7 +54,7 @@ export function useKpiCounts(): UseQueryResult<DashboardKpiCounts, DashboardQuer
       // 3. On Hold Projects Count
       const { count: onHoldProjects, error: holdErr } = await (supabase as any)
         .from('projects')
-        .select('id', { count: 'exact', head: true })
+        .select('id', { count: 'exact' })
         .eq('status', 'on_hold');
 
       if (holdErr) throw { message: holdErr.message, code: holdErr.code };
@@ -66,7 +66,7 @@ export function useKpiCounts(): UseQueryResult<DashboardKpiCounts, DashboardQuer
 
       const { count: upcomingDeadlines } = await (supabase as any)
         .from('milestones')
-        .select('id', { count: 'exact', head: true })
+        .select('id', { count: 'exact' })
         .gte('due_date', now.toISOString())
         .lte('due_date', inSevenDays.toISOString())
         .lt('progress', 100);
@@ -74,18 +74,18 @@ export function useKpiCounts(): UseQueryResult<DashboardKpiCounts, DashboardQuer
       // 5. Overdue Tasks Count
       const { count: overdueTasks } = await (supabase as any)
         .from('tasks')
-        .select('id', { count: 'exact', head: true })
+        .select('id', { count: 'exact' })
         .neq('status', 'completed');
 
       // 6. Active Clients Count
       const { count: activeClientsCount } = await (supabase as any)
         .from('clients')
-        .select('id', { count: 'exact', head: true });
+        .select('id', { count: 'exact' });
 
       // 7. GitHub Repositories Count
       const { count: githubRepositories } = await (supabase as any)
         .from('github_repositories')
-        .select('id', { count: 'exact', head: true });
+        .select('id', { count: 'exact' });
 
       return {
         activeProjects: activeProjects ?? 0,

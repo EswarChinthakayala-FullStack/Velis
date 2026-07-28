@@ -93,7 +93,7 @@ export async function fetchUnreadCount(): Promise<number> {
   try {
     const { count, error } = await (supabase as any)
       .from('notifications')
-      .select('id', { count: 'exact', head: true })
+      .select('id', { count: 'exact' })
       .eq('read_status', false)
       .eq('archived', false);
 
