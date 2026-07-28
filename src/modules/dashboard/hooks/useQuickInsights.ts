@@ -6,13 +6,32 @@ export function useQuickInsights() {
   return useQuery<InsightItem[], Error>({
     queryKey: ['dashboard', 'quickInsights'],
     queryFn: async () => {
-      const [reviewRes, shareRes] = await Promise.allSettled([
-        (supabase as any).from('tasks').select('id', { count: 'exact', head: true }).eq('status', 'review'),
-        (supabase as any).from('share_links').select('id', { count: 'exact', head: true }).eq('is_active', true),
-      ]);
+      let reviewCount = 0;
+      let activeShareLinks = 0;
 
-      const reviewCount = reviewRes.status === 'fulfilled' && !reviewRes.value.error ? (reviewRes.value.count ?? 0) : 0;
-      const activeShareLinks = shareRes.status === 'fulfilled' && !shareRes.value.error ? (shareRes.value.count ?? 0) : 0;
+      try {
+        const { count: taskCount, error: taskErr } = await (supabase as any)
+          .from('tasks')
+          .select('id', { count: 'exact', head: true })
+          .eq('status', 'review');
+        if (!taskErr && typeof taskCount === 'number') {
+          reviewCount = taskCount;
+        }
+      } catch (err: any) {
+        console.warn('QuickInsights task query warning:', err?.message);
+      }
+
+      try {
+        const { count: shareCount, error: shareErr } = await (supabase as any)
+          .from('share_links')
+          .select('id', { count: 'exact', head: true })
+          .eq('is_active', true);
+        if (!shareErr && typeof shareCount === 'number') {
+          activeShareLinks = shareCount;
+        }
+      } catch (err: any) {
+        console.warn('QuickInsights share link query warning:', err?.message);
+      }
 
       return [
         {
