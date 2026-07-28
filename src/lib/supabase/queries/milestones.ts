@@ -101,11 +101,11 @@ export function mapRowToMilestoneItem(row: any): MilestoneItem {
 export async function fetchMilestones(projectId?: string): Promise<MilestoneItem[]> {
   let targetData: any[] = [];
 
-  // Step 1: Full query with attachments
+  // Step 1: Base query without invalid joins
   try {
     let query = (supabase as any)
       .from('milestones')
-      .select('id, project_id, title, progress, notes, due_date, completion_date, sort_order, created_at, milestone_attachments(id, milestone_id, file_name, file_url)')
+      .select('id, project_id, title, progress, notes, due_date, completion_date, sort_order, created_at')
       .order('created_at', { ascending: true });
 
     if (projectId && projectId !== 'all') {
@@ -113,31 +113,12 @@ export async function fetchMilestones(projectId?: string): Promise<MilestoneItem
     }
 
     const { data, error } = await query;
-    if (!error && Array.isArray(data) && data.length > 0) {
+    if (!error && Array.isArray(data)) {
       targetData = data;
     }
   } catch {}
 
-  // Step 2: Base query without attachments
-  if (targetData.length === 0) {
-    try {
-      let baseQuery = (supabase as any)
-        .from('milestones')
-        .select('id, project_id, title, progress, notes, due_date, completion_date, sort_order, created_at')
-        .order('created_at', { ascending: true });
-
-      if (projectId && projectId !== 'all') {
-        baseQuery = baseQuery.eq('project_id', projectId);
-      }
-
-      const { data: baseData, error: baseErr } = await baseQuery;
-      if (!baseErr && Array.isArray(baseData) && baseData.length > 0) {
-        targetData = baseData;
-      }
-    } catch {}
-  }
-
-  // Step 3: Minimalist query with core title
+  // Step 2: Minimalist query with core title
   if (targetData.length === 0) {
     try {
       let minQuery = (supabase as any)
@@ -150,13 +131,13 @@ export async function fetchMilestones(projectId?: string): Promise<MilestoneItem
       }
 
       const { data: minData, error: minErr } = await minQuery;
-      if (!minErr && Array.isArray(minData) && minData.length > 0) {
+      if (!minErr && Array.isArray(minData)) {
         targetData = minData;
       }
     } catch {}
   }
 
-  // Step 4: Minimalist query with legacy name
+  // Step 3: Minimalist query with legacy name
   if (targetData.length === 0) {
     try {
       let nameQuery = (supabase as any)
