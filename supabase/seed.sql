@@ -1,30 +1,24 @@
--- ===================================================
--- VELIS ENTERPRISE SEED DATA (PROD RELEASE v1.1)
--- Sole System Admin / Owner: Eswar Chinthakayala
--- Email: eswarchinthakayala2004@gmail.com | Phone: 7674940870
--- Default Password: Admin@123
--- ===================================================
---
--- IMPORTANT: Do NOT manually insert into auth.users!
--- Supabase Auth GoTrue requires matching auth.identities records.
--- The admin user should be created via the Supabase Auth API (signup)
--- or via the Supabase Dashboard → Authentication → Users → Add User.
---
--- This seed only pre-creates the public.profiles row.
--- The handle_new_user() trigger will upsert it when the user signs up.
--- ===================================================
+-- ============================================================================
+-- ESFLOW ADMIN SEED SCRIPT
+-- Sole System Owner: Eswar Chinthakayala
+-- Email: eswarchinthakayala2004@gmail.com
+-- ============================================================================
 
--- 1. Pre-create the admin profile (will be upserted by trigger on first signup)
-insert into public.profiles (id, full_name, email, avatar_url, role, created_at)
-values (
-  '00000000-0000-0000-0000-000000000001'::uuid,
+-- Option A: If your Admin User is already created in Supabase Auth,
+-- run this query to set Admin details for your Auth User ID:
+
+insert into public.profiles (id, full_name, email, role, company, github_username)
+select 
+  id,
   'Eswar Chinthakayala',
-  'eswarchinthakayala2004@gmail.com',
-  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
-  'owner',
-  now()
-)
+  email,
+  'admin',
+  'EsFlow Systems',
+  'EswarChinthakayala-FullStack'
+from auth.users
+where email = 'eswarchinthakayala2004@gmail.com'
 on conflict (id) do update set
   full_name = excluded.full_name,
-  email = excluded.email,
-  role = excluded.role;
+  role = excluded.role,
+  company = excluded.company,
+  github_username = excluded.github_username;
