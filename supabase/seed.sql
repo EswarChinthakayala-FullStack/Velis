@@ -1,48 +1,81 @@
 -- ============================================================================
--- ESFLOW AUTOMATED ADMIN INITIALIZATION SCRIPT
+-- ESFLOW AUTOMATED ADMIN INITIALIZATION SCRIPT (FIXES GOTRUE 500 ERROR)
 -- Sole System Owner: Eswar Chinthakayala
 -- Email: eswarchinthakayala2004@gmail.com
 -- Default Password: Admin@123
 -- ============================================================================
+
+-- Clean reset any incomplete auth user
+delete from auth.users where email = 'eswarchinthakayala2004@gmail.com';
 
 do $$
 declare
   v_user_id uuid := gen_random_uuid();
   v_email text := 'eswarchinthakayala2004@gmail.com';
   v_password text := 'Admin@123';
+  v_encrypted_password text := crypt('Admin@123', gen_salt('bf'));
 begin
-  -- 1. Check if user already exists in auth.users
-  select id into v_user_id from auth.users where email = v_email;
+  -- 1. Insert valid GoTrue user into auth.users
+  insert into auth.users (
+    instance_id,
+    id,
+    aud,
+    role,
+    email,
+    encrypted_password,
+    email_confirmed_at,
+    last_sign_in_at,
+    raw_app_meta_data,
+    raw_user_meta_data,
+    is_super_admin,
+    created_at,
+    updated_at,
+    confirmed_at,
+    email_change_token_current,
+    email_change,
+    email_change_token_new,
+    recovery_token
+  ) values (
+    '00000000-0000-0000-0000-000000000000',
+    v_user_id,
+    'authenticated',
+    'authenticated',
+    v_email,
+    v_encrypted_password,
+    now(),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    '{"full_name":"Eswar Chinthakayala"}'::jsonb,
+    false,
+    now(),
+    now(),
+    now(),
+    '',
+    '',
+    '',
+    ''
+  );
 
-  -- 2. If not found, insert Admin user into auth.users directly
-  if v_user_id is null then
-    v_user_id := gen_random_uuid();
-    insert into auth.users (
-      instance_id,
-      id,
-      aud,
-      role,
-      email,
-      encrypted_password,
-      email_confirmed_at,
-      raw_app_meta_data,
-      raw_user_meta_data,
-      created_at,
-      updated_at
-    ) values (
-      '00000000-0000-0000-0000-000000000000',
-      v_user_id,
-      'authenticated',
-      'authenticated',
-      v_email,
-      crypt(v_password, gen_salt('bf')),
-      now(),
-      '{"provider":"email","providers":["email"]}'::jsonb,
-      '{"full_name":"Eswar Chinthakayala"}'::jsonb,
-      now(),
-      now()
-    );
-  end if;
+  -- 2. Insert corresponding identity into auth.identities (Required for GoTrue password auth)
+  insert into auth.identities (
+    id,
+    user_id,
+    identity_data,
+    provider,
+    last_sign_in_at,
+    created_at,
+    updated_at,
+    provider_id
+  ) values (
+    v_user_id,
+    v_user_id,
+    format('{"sub":"%s","email":"%s"}', v_user_id, v_email)::jsonb,
+    'email',
+    now(),
+    now(),
+    now(),
+    v_email
+  );
 
   -- 3. Create or update Admin Profile in public.profiles
   insert into public.profiles (id, full_name, email, role, company, github_username)
