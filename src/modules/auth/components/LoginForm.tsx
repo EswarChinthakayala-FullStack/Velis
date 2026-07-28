@@ -78,7 +78,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
     },
   });
 
-  // Supabase Authentication Mutation via React Query
+  // Supabase Authentication Mutation via React Query (Strict Login Boundary)
   const authMutation = useMutation({
     mutationFn: async (data: LoginFormData) => {
       const { data: authData, error } = await supabase.auth.signInWithPassword({
@@ -87,35 +87,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
       });
 
       if (error) {
-        // Fallback: If account does not exist or GoTrue credentials are fresh, attempt registration
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email: data.email,
-          password: data.password,
-          options: {
-            data: {
-              full_name: data.email.split('@')[0],
-            },
-          },
-        });
-
-        if (signUpError) {
-          throw error;
-        }
-
-        if (signUpData.session) {
-          return signUpData;
-        }
-
-        // Re-attempt sign in if email confirmation was auto-completed
-        const { data: retryAuth, error: retryError } = await supabase.auth.signInWithPassword({
-          email: data.email,
-          password: data.password,
-        });
-
-        if (retryError) {
-          throw error;
-        }
-        return retryAuth;
+        throw new Error('Invalid email or password. Public self-registration is disabled on this platform.');
       }
       return authData;
     },
