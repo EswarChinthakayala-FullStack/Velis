@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { supabase, resilientFetch } from '../lib/supabase';
+import { supabase, resilientFetch } from '../lib/supabase/client';
 import { authService } from './auth.service';
 
 export interface ValidateTokenParams {

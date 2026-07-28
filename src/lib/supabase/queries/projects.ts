@@ -107,7 +107,7 @@ export async function fetchProjects(
 
     if (error) {
       console.warn('Projects fetch failed:', error.message);
-      return { projects: [], totalCount: 0, totalPages: 1, currentPage: page, pageSize };
+      return { projects: [], totalCount: 0, totalPages: 1, page, pageSize };
     }
 
     const rawProjects = data || [];
