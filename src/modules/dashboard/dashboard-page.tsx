@@ -49,9 +49,6 @@ export const DashboardPage: React.FC = () => {
       {/* 2. Quick System Insights Bar */}
       <QuickInsights />
 
-      {/* 3. 7-Metric Enterprise KPI Grid */}
-      <KPICards />
-
       {/* 4. 2x2 Charts Grid (Status Donut, Revenue Bar, Growth Area, GitHub Line) */}
       <ChartsGrid />
 

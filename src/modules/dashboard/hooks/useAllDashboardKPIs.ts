@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '../../../lib/supabase/client';
 import type { KPICardData } from '../types';
 import {
   FolderCheckIcon,
@@ -23,87 +22,28 @@ export interface DashboardKPIsSummary {
   activeShareLinks: KPICardData;
 }
 
+/**
+ * useAllDashboardKPIs
+ * Disabled database querying for KPI cards as requested.
+ * Instantly returns formatSummary with zero network requests.
+ */
 export function useAllDashboardKPIs() {
   return useQuery<DashboardKPIsSummary, Error>({
     queryKey: ['dashboard', 'all-kpis-summary'],
     queryFn: async () => {
-      let activeProjectsCount = 0;
-      let completedProjectsCount = 0;
-      let onHoldProjectsCount = 0;
-      let upcomingDeadlinesCount = 0;
-      let overdueTasksCount = 0;
-      let activeClientsCount = 0;
-      let repositoryCountVal = 0;
-      let activeShareLinksCount = 0;
-
-      // 1. Try High-Performance Single RPC Function Call First
-      try {
-        const { data: rpcData, error: rpcError } = await (supabase as any).rpc('get_dashboard_kpis');
-        if (!rpcError && rpcData) {
-          activeProjectsCount = Number(rpcData.active_projects ?? 0);
-          completedProjectsCount = Number(rpcData.completed_projects ?? 0);
-          onHoldProjectsCount = Number(rpcData.on_hold_projects ?? 0);
-          upcomingDeadlinesCount = Number(rpcData.upcoming_deadlines ?? 0);
-          overdueTasksCount = Number(rpcData.overdue_tasks ?? 0);
-          activeClientsCount = Number(rpcData.active_clients ?? 0);
-          repositoryCountVal = Number(rpcData.repository_count ?? 0);
-          activeShareLinksCount = Number(rpcData.active_share_links ?? 0);
-
-          return formatSummary({
-            activeProjectsCount,
-            completedProjectsCount,
-            onHoldProjectsCount,
-            upcomingDeadlinesCount,
-            overdueTasksCount,
-            activeClientsCount,
-            repositoryCountVal,
-            activeShareLinksCount,
-          });
-        }
-      } catch {
-        // Fall back to batch query if RPC is not deployed yet on remote DB
-      }
-
-      // 2. Resilient Batch Fallback (Promise.allSettled)
-      const now = new Date().toISOString();
-      const in7Days = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-      const today = new Date().toISOString().split('T')[0];
-
-      const [
-        activeProjRes,
-        completedProjRes,
-        onHoldProjRes,
-        deadlinesRes,
-        overdueTasksRes,
-        clientsRes,
-        reposRes,
-        shareLinksRes,
-      ] = await Promise.allSettled([
-        (supabase as any).from('projects').select('id', { count: 'exact', head: true }).eq('status', 'active'),
-        (supabase as any).from('projects').select('id', { count: 'exact', head: true }).eq('status', 'completed'),
-        (supabase as any).from('projects').select('id', { count: 'exact', head: true }).eq('status', 'on_hold'),
-        (supabase as any).from('projects').select('id', { count: 'exact', head: true }).gt('deadline', now).lte('deadline', in7Days),
-        (supabase as any).from('tasks').select('id', { count: 'exact', head: true }).lt('due_date', today).neq('status', 'completed'),
-        (supabase as any).from('clients').select('id', { count: 'exact', head: true }),
-        (supabase as any).from('github_repositories').select('id', { count: 'exact', head: true }),
-        (supabase as any).from('share_links').select('id', { count: 'exact', head: true }).eq('is_active', true),
-      ]);
-
-      const getCount = (res: PromiseSettledResult<any>): number =>
-        res.status === 'fulfilled' && res.value && !res.value.error ? (res.value.count ?? 0) : 0;
-
       return formatSummary({
-        activeProjectsCount: getCount(activeProjRes),
-        completedProjectsCount: getCount(completedProjRes),
-        onHoldProjectsCount: getCount(onHoldProjRes),
-        upcomingDeadlinesCount: getCount(deadlinesRes),
-        overdueTasksCount: getCount(overdueTasksRes),
-        activeClientsCount: getCount(clientsRes),
-        repositoryCountVal: getCount(reposRes),
-        activeShareLinksCount: getCount(shareLinksRes),
+        activeProjectsCount: 0,
+        completedProjectsCount: 0,
+        onHoldProjectsCount: 0,
+        upcomingDeadlinesCount: 0,
+        overdueTasksCount: 0,
+        activeClientsCount: 0,
+        repositoryCountVal: 0,
+        activeShareLinksCount: 0,
       });
     },
-    staleTime: 1000 * 60 * 5, // 5 minutes fresh
+    staleTime: Infinity,
+    enabled: false,
   });
 }
 
@@ -125,8 +65,8 @@ function formatSummary(counts: {
       title: 'Active Projects',
       value: counts.activeProjectsCount,
       label: 'Currently in progress',
-      trend: '+2 this month',
-      trendType: 'positive',
+      trend: '0',
+      trendType: 'neutral',
       icon: FolderCheckIcon,
       updatedAt: nowStr,
     },
@@ -135,7 +75,7 @@ function formatSummary(counts: {
       title: 'Completed Projects',
       value: counts.completedProjectsCount,
       label: 'Delivered successfully',
-      trend: '100% SLA',
+      trend: '0',
       trendType: 'positive',
       icon: CheckmarkCircle01Icon,
       updatedAt: nowStr,
@@ -145,7 +85,7 @@ function formatSummary(counts: {
       title: 'On Hold Projects',
       value: counts.onHoldProjectsCount,
       label: 'Paused or pending input',
-      trend: '0 this week',
+      trend: '0',
       trendType: 'neutral',
       icon: Time01Icon,
       updatedAt: nowStr,
@@ -155,7 +95,7 @@ function formatSummary(counts: {
       title: 'Upcoming Deadlines',
       value: counts.upcomingDeadlinesCount,
       label: 'Due in next 7 days',
-      trend: 'On track',
+      trend: 'All clear',
       trendType: 'live',
       icon: Calendar01Icon,
       updatedAt: nowStr,
@@ -165,8 +105,8 @@ function formatSummary(counts: {
       title: 'Overdue Tasks',
       value: counts.overdueTasksCount,
       label: 'Action required',
-      trend: counts.overdueTasksCount > 0 ? 'Requires attention' : 'All clear',
-      trendType: counts.overdueTasksCount > 0 ? 'negative' : 'positive',
+      trend: 'All clear',
+      trendType: 'positive',
       icon: AlertCircleIcon,
       updatedAt: nowStr,
     },
@@ -175,8 +115,8 @@ function formatSummary(counts: {
       title: 'Active Clients',
       value: counts.activeClientsCount,
       label: 'Managed organizations',
-      trend: '+1 new',
-      trendType: 'positive',
+      trend: '0',
+      trendType: 'neutral',
       icon: UserGroupIcon,
       updatedAt: nowStr,
     },
